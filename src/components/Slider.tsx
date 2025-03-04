@@ -13,22 +13,22 @@ const Slider: React.FC = () => {
   ];
 
   return (
-    <Swiper
-      modules={[Navigation, Pagination, Autoplay]}
-      spaceBetween={50}
-      slidesPerView={1}
-      navigation
-      pagination={{ clickable: true }}
-      autoplay={{ delay: 3000 }}
-      loop
-      className="my-8"
-    >
-      {slides.map((slide) => (
-        <SwiperSlide key={slide.id}>
-          <img src={slide.image} alt={slide.alt} className="w-full h-auto rounded-lg" />
-        </SwiperSlide>
-      ))}
-    </Swiper>
+      <Swiper
+          modules={[Navigation, Pagination, Autoplay]}
+          spaceBetween={50}
+          slidesPerView={1}
+          navigation
+          pagination={{ clickable: true }}
+          autoplay={{ delay: 3000 }}
+          loop
+          className="my-8 h-80"
+      >
+        {slides.map((slide) => (
+            <SwiperSlide key={slide.id}>
+              <img src={slide.image} alt={slide.alt} className="w-full h-full object-cover rounded-lg" />
+            </SwiperSlide>
+        ))}
+      </Swiper>
   );
 };
 
