@@ -9,17 +9,20 @@ import Footer from '../components/Footer';
 
 
 const Home: React.FC = () => {
-  return (
-    <div className="container mx-auto px-4">
-<Header/>
-      <Slider />
-      <Categories />
-      <Brands />
-      <DiscountedProducts />
-      <BestSellingProducts />
-<Footer/>
-    </div>
-  );
+    return (
+        <div className="container mx-auto px-4">
+            <Header/>
+            <div className="mt-40">
+
+                <Slider/>
+            </div>
+            <Categories/>
+            <Brands/>
+            <DiscountedProducts/>
+            <BestSellingProducts/>
+            <Footer/>
+        </div>
+    );
 };
 
 export default Home;
