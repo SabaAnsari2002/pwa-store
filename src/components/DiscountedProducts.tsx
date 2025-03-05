@@ -10,7 +10,10 @@ const DiscountedProducts: React.FC = () => {
 
   return (
     <div className="my-8">
-      <h2 className="text-2xl font-bold mb-4">تخفیف‌های ویژه</h2>
+        <div className="flex justify-between items-center">
+            <div className="flex-1"></div>
+            <h2 className="text-2xl font-bold mb-4">تخفیف‌های ویژه</h2>
+        </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {discountedProducts.map((product) => (
           <a key={product.id} href={product.link} className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">

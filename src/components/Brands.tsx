@@ -11,9 +11,12 @@ const Brands: React.FC = () => {
 
     return (
         <div className="my-8">
-            <h2 className="text-2xl font-bold mb-4">برندهای محبوب</h2>
+            <div className="flex justify-between items-center">
+                <div className="flex-1"></div>
+                <h2 className="text-2xl font-bold mb-4">برندهای محبوب</h2>
+            </div>
             <div className="flex justify-between items-center gap-4 overflow-x-auto py-4">
-                {brands.map((brand) => (
+                {brands.slice().reverse().map((brand) => (
                     <a
                         key={brand.id}
                         href={brand.link}
