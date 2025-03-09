@@ -1,8 +1,9 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 const SubCategoryPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
 
     // اینجا می‌توانید بر اساس id محصولات مربوط به این زیردسته‌بندی را از API یا آرایه‌ای دریافت کنید
     const products = [
@@ -42,7 +43,11 @@ const SubCategoryPage: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {filteredProducts.length > 0 ? (
                     filteredProducts.map((product) => (
-                        <div key={product.id} className="p-4 bg-white rounded-lg shadow-md text-center">
+                        <div
+                            key={product.id}
+                            className="p-4 bg-white rounded-lg shadow-md text-center cursor-pointer"
+                            onClick={() => navigate(`/product/${product.id}`)}
+                        >
                             <img src={product.image} alt={product.name} className="w-full h-32 object-cover mb-2 rounded-lg" />
                             <p>{product.name}</p>
                         </div>
