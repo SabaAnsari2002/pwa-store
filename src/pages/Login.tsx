@@ -1,46 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+interface LoginProps {
+  setUser: (user: string | null) => void;
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle login logic here
-    console.log('Login attempt with:', { email, password });
+const Login: React.FC<LoginProps> = ({ setUser }) => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+  const handleLogin = () => {
+    if (username.trim() && password.trim()) {
+      localStorage.setItem("user", username);
+      setUser(username);
+      navigate("/");
+    }
   };
 
   return (
-    <div className="container mx-auto mt-8 p-4">
-      <h2 className="text-2xl font-bold mb-4">Login</h2>
-      <form onSubmit={handleSubmit} className="max-w-md">
-        <div className="mb-4">
-          <label htmlFor="email" className="block mb-2">Email:</label>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-500 to-purple-600">
+        <div className="bg-white p-8 rounded-2xl shadow-lg w-96">
+          <h2 className="text-3xl font-bold text-center text-gray-700 mb-6">ورود به حساب</h2>
+
           <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
+              type="text"
+              placeholder="نام کاربری"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full p-3 mb-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
-        <div className="mb-4">
-          <label htmlFor="password" className="block mb-2">Password:</label>
+
           <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
+              type="password"
+              placeholder="رمز عبور"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 mb-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+
+          <button
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl transition-all"
+              onClick={handleLogin}
+          >
+            ورود
+          </button>
+
+          <p className="text-center mt-4 text-gray-600">
+            حساب ندارید؟{" "}
+            <button className="text-blue-500 hover:underline" onClick={() => navigate("/register")}>
+              ثبت‌نام کنید
+            </button>
+          </p>
         </div>
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-          Login
-        </button>
-      </form>
-    </div>
+      </div>
   );
 };
 
