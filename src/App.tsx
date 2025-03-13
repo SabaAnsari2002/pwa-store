@@ -11,6 +11,7 @@ import OrdersPage from "./pages/OrdersPage";
 import AddressesPage from "./pages/AddressesPage";
 import WishlistPage from "./pages/WishlistPage";
 import AccountSettingsPage from "./pages/AccountSettingsPage";
+import CartPage from "./pages/CartPage";
 
 const App: React.FC = () => {
     const [user, setUser] = useState<string | null>(localStorage.getItem("user"));
@@ -32,6 +33,8 @@ const App: React.FC = () => {
                 <Route path="/addresses" element={<AddressesPage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
                 <Route path="/account-settings" element={<AccountSettingsPage />} />
+                <Route path="/cart" element={<CartPage />} />
+
             </Routes>
         </Router>
     );
