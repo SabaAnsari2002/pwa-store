@@ -45,7 +45,7 @@ const Home: React.FC<HomeProps> = ({ user, setUser }) => {
                             </button>
                             <button
                                 className="bg-purple-500 text-white px-4 py-2 rounded mr-2"
-                                onClick={() => navigate("/create-shop")}
+                                onClick={() => navigate("/seller-dashboard")}
                             >
                                 ایجاد غرفه
                             </button>

@@ -12,9 +12,16 @@ import AddressesPage from "./pages/AddressesPage";
 import WishlistPage from "./pages/WishlistPage";
 import AccountSettingsPage from "./pages/AccountSettingsPage";
 import CartPage from "./pages/CartPage";
-import CreateShop from "./pages/CreateShop";
-import SellerDashboard from "./pages/SellerDashboard";
-import AddProduct from "./pages/AddProduct";
+import SellerDashboard from "./pages/seller/SellerDashboard";
+import DashboardContent from "./pages/seller/DashboardContent";
+import ProductManagement from "./pages/seller/ProductManagement";
+import OrderManagement from "./pages/seller/OrderManagement";
+import FinancialManagement from "./pages/seller/FinancialManagement";
+import CustomerManagement from "./pages/seller/CustomerManagement";
+import DiscountManagement from "./pages/seller/DiscountManagement";
+import ReportsAndAnalytics from "./pages/seller/ReportsAndAnalytics";
+import Settings from "./pages/seller/Settings";
+import TeamManagement from "./pages/seller/TeamManagement";
 
 
 const App: React.FC = () => {
@@ -39,9 +46,17 @@ const App: React.FC = () => {
                 <Route path="/account-settings" element={<AccountSettingsPage />} />
                 <Route path="/cart" element={<CartPage />} />
 
-                <Route path="/create-shop" element={<CreateShop />} />
-                <Route path="/seller-dashboard" element={<SellerDashboard />} />
-                <Route path="/add-product" element={<AddProduct />} />
+                <Route path="/seller-dashboard" element={<SellerDashboard />}>
+                    <Route index element={<DashboardContent />} />
+                    <Route path="products" element={<ProductManagement />} />
+                    <Route path="orders" element={<OrderManagement />} />
+                    <Route path="financial" element={<FinancialManagement />} />
+                    <Route path="customers" element={<CustomerManagement />} />
+                    <Route path="discounts" element={<DiscountManagement />} />
+                    <Route path="reports" element={<ReportsAndAnalytics />} />
+                    <Route path="settings" element={<Settings />} />
+                    <Route path="team" element={<TeamManagement />} />
+                </Route>
 
             </Routes>
         </Router>
