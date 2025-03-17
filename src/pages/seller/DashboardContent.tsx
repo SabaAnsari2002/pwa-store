@@ -1,5 +1,5 @@
 import React from "react";
-// import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const DashboardContent: React.FC = () => {
     // داده‌های نمونه برای نمودار
@@ -36,19 +36,19 @@ const DashboardContent: React.FC = () => {
                 </div>
             </div>
 
-            {/*/!* نمودار فروش ماهانه *!/*/}
-            {/*<div className="bg-white p-6 rounded-lg shadow-md mb-8">*/}
-            {/*    <h2 className="text-xl font-bold text-gray-800 mb-4">نمودار فروش ماهانه</h2>*/}
-            {/*    <ResponsiveContainer width="100%" height={300}>*/}
-            {/*        <BarChart data={salesData}>*/}
-            {/*            <XAxis dataKey="name" />*/}
-            {/*            <YAxis />*/}
-            {/*            <Tooltip />*/}
-            {/*            <Legend />*/}
-            {/*            <Bar dataKey="فروش" fill="#8884d8" />*/}
-            {/*        </BarChart>*/}
-            {/*    </ResponsiveContainer>*/}
-            {/*</div>*/}
+            {/* نمودار فروش ماهانه */}
+            <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">نمودار فروش ماهانه</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={salesData}>
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="فروش" fill="#8884d8" />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
 
             {/* جدول وضعیت سفارشات */}
             <div className="bg-white p-6 rounded-lg shadow-md">
