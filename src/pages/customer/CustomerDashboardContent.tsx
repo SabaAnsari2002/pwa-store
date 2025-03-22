@@ -2,7 +2,7 @@ import React from "react";
 
 const CustomerDashboardContent: React.FC = () => {
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-6 rounded-lg shadow-md" style={{ direction: 'rtl' }}>
             <h2 className="text-2xl font-bold mb-6">داشبورد مشتری</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* نمایش خلاصه اطلاعات کاربر */}

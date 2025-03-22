@@ -20,7 +20,7 @@ const Settings: React.FC = () => {
     };
 
     return (
-        <div className="p-6">
+        <div className="p-6" style={{ direction: 'rtl' }}>
             <h1 className="text-2xl font-bold mb-6">تنظیمات و سفارشی‌سازی فروشگاه</h1>
 
             {/* فرم تنظیمات فروشگاه */}
