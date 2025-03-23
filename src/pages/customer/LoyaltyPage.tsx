@@ -2,7 +2,7 @@ import React from "react";
 
 const LoyaltyPage: React.FC = () => {
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-6 rounded-lg shadow-md" style={{ direction: 'rtl' }}>
             <h2 className="text-2xl font-bold mb-6">برنامه‌های وفاداری و سطح‌بندی مشتریان</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gray-100 p-4 rounded-lg">

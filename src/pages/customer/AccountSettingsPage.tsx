@@ -2,7 +2,7 @@ import React from "react";
 
 const AccountSettingsPage: React.FC = () => {
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-6 rounded-lg shadow-md" style={{ direction: 'rtl' }}>
             <h2 className="text-2xl font-bold mb-6">مدیریت پروفایل</h2>
             <form>
                 <div className="mb-4">

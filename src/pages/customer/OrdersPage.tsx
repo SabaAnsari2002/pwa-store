@@ -2,7 +2,7 @@ import React from "react";
 
 const OrdersPage: React.FC = () => {
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-white p-6 rounded-lg shadow-md" style={{ direction: 'rtl' }}>
             <h2 className="text-2xl font-bold mb-6">مدیریت سفارشات</h2>
             <div className="overflow-x-auto">
                 <table className="min-w-full bg-white">
