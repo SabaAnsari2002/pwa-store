@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import Slider from "../components/Slider";
 import Categories from "../components/Categories";
 import Brands from "../components/Brands";
@@ -7,13 +7,17 @@ import DiscountedProducts from "../components/DiscountedProducts";
 import BestSellingProducts from "../components/BestSellingProducts";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import Collection from "../components/Collection";
+import DiscountSlider from "../components/DiscountSlider";
+import Collection2 from "../components/Collection2";
+import HotProducts from "../components/HotProducts";
 
 interface HomeProps {
     user: string | null;
     setUser: (user: string | null) => void;
 }
 
-const Home: React.FC<HomeProps> = ({ user, setUser }) => {
+const Home: React.FC<HomeProps> = ({user, setUser}) => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -23,7 +27,7 @@ const Home: React.FC<HomeProps> = ({ user, setUser }) => {
 
     return (
         <div className="bg-pink-100 min-h-screen">
-            <Header />
+            <Header/>
             <div className="container mx-auto px-4">
                 <div className="flex justify-between items-center pt-40">
                     <h1 className="text-2xl font-bold">
@@ -66,13 +70,17 @@ const Home: React.FC<HomeProps> = ({ user, setUser }) => {
                         </button>
                     )}
                 </div>
-                <Slider />
-                <Categories />
-                <Brands />
-                <DiscountedProducts />
-                <BestSellingProducts />
+                <Slider/>
+                <Collection/>
+                <DiscountSlider/>
+                <Categories/>
+                <Collection2/>
+                <Brands/>
+                <DiscountedProducts/>
+                <HotProducts/>
+                <BestSellingProducts/>
             </div>
-            <Footer />
+            <Footer/>
         </div>
     );
 };
