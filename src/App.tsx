@@ -6,7 +6,6 @@ import Register from "./pages/Register";
 import CategoryPage from "./pages/CategoryPage";
 import SubCategoryPage from "./pages/SubCategoryPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
-import CartPage from "./pages/CartPage";
 import SellerDashboard from "./pages/seller/SellerDashboard";
 import DashboardContent from "./pages/seller/DashboardContent";
 import ProductManagement from "./pages/seller/ProductManagement";
@@ -45,7 +44,6 @@ const App: React.FC = () => {
                 <Route path="/product/:id" element={<ProductDetailPage />} />
 
                 {/* مسیرهای پنل کاربری */}
-                <Route path="/cart" element={<CartPage />} />
 
                 <Route path="/seller-dashboard" element={<SellerDashboard />}>
                     <Route index element={<DashboardContent />} />
