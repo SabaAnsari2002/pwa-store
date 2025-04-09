@@ -42,12 +42,6 @@ const Home: React.FC<HomeProps> = ({user, setUser}) => {
                                 پروفایل
                             </button>
                             <button
-                                className="bg-green-500 text-white px-4 py-2 rounded mr-2"
-                                onClick={() => navigate("/cart")}
-                            >
-                                سبد خرید
-                            </button>
-                            <button
                                 className="bg-purple-500 text-white px-4 py-2 rounded mr-2"
                                 onClick={() => navigate("/seller-dashboard")}
                             >
