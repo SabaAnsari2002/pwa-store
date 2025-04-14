@@ -5,14 +5,14 @@ import "../css/DashboardSlider.css";
 
 const CustomerDashboard: React.FC = () => {
     return (
-        <div className="flex flex-row-reverse min-h-screen bg-gray-100 overflow-hidden">
+        <div className="flex flex-row-reverse min-h-screen bg-[#FDC500] overflow-hidden">
             {/* Sidebar Container */}
-            <div className="sidebar-container w-64 bg-gray-800 text-white h-screen overflow-y-auto">
+            <div className="sidebar-container w-64 bg-[#00296B] text-white h-screen overflow-y-auto shadow-lg">
                 <Sidebar />
             </div>
 
             {/* Content Container */}
-            <div className="content flex-1 p-8 overflow-y-auto h-screen">
+            <div className="content flex-1 p-8 overflow-y-auto h-screen bg-[#ffffff]">
                 <Outlet />
             </div>
         </div>
