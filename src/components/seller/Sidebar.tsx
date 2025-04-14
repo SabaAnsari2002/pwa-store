@@ -2,105 +2,57 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 
 const Sidebar: React.FC = () => {
-    const location = useLocation(); // استفاده از هوک useLocation برای دریافت مسیر فعلی
+    const location = useLocation();
+
+    const menuItems = [
+        { to: "/seller-dashboard", label: "داشبورد" },
+        { to: "/seller-dashboard/products", label: "مدیریت محصولات" },
+        { to: "/seller-dashboard/orders", label: "مدیریت سفارشات" },
+        { to: "/seller-dashboard/financial", label: "مدیریت مالی" },
+        { to: "/seller-dashboard/customers", label: "مدیریت مشتریان" },
+        { to: "/seller-dashboard/discounts", label: "مدیریت تخفیف‌ها" },
+        { to: "/seller-dashboard/reports", label: "گزارشات و آنالیز" },
+        { to: "/seller-dashboard/settings", label: "تنظیمات" },
+        { to: "/seller-dashboard/team", label: "مدیریت تیم" },
+    ];
 
     return (
-        <div className="w-64 bg-gray-800 text-white min-h-screen p-4" style={{ direction: 'rtl', textAlign: 'right' }}>
-            <h2 className="text-2xl font-bold mb-6">پنل فروشنده</h2>
-            <ul>
-                <li className="mb-4">
-                    <Link
-                        to="/seller-dashboard"
-                        className={`block hover:bg-gray-700 p-2 rounded ${
-                            location.pathname === "/seller-dashboard" ? "bg-gray-700 border-r-4 border-blue-500" : ""
-                        }`}
-                    >
-                        داشبورد
-                    </Link>
-                </li>
-                <li className="mb-4">
-                    <Link
-                        to="/seller-dashboard/products"
-                        className={`block hover:bg-gray-700 p-2 rounded ${
-                            location.pathname === "/seller-dashboard/products" ? "bg-gray-700 border-r-4 border-blue-500" : ""
-                        }`}
-                    >
-                        مدیریت محصولات
-                    </Link>
-                </li>
-                <li className="mb-4">
-                    <Link
-                        to="/seller-dashboard/orders"
-                        className={`block hover:bg-gray-700 p-2 rounded ${
-                            location.pathname === "/seller-dashboard/orders" ? "bg-gray-700 border-r-4 border-blue-500" : ""
-                        }`}
-                    >
-                        مدیریت سفارشات
-                    </Link>
-                </li>
-                <li className="mb-4">
-                    <Link
-                        to="/seller-dashboard/financial"
-                        className={`block hover:bg-gray-700 p-2 rounded ${
-                            location.pathname === "/seller-dashboard/financial" ? "bg-gray-700 border-r-4 border-blue-500" : ""
-                        }`}
-                    >
-                        مدیریت مالی
-                    </Link>
-                </li>
-                <li className="mb-4">
-                    <Link
-                        to="/seller-dashboard/customers"
-                        className={`block hover:bg-gray-700 p-2 rounded ${
-                            location.pathname === "/seller-dashboard/customers" ? "bg-gray-700 border-r-4 border-blue-500" : ""
-                        }`}
-                    >
-                        مدیریت مشتریان
-                    </Link>
-                </li>
-                <li className="mb-4">
-                    <Link
-                        to="/seller-dashboard/discounts"
-                        className={`block hover:bg-gray-700 p-2 rounded ${
-                            location.pathname === "/seller-dashboard/discounts" ? "bg-gray-700 border-r-4 border-blue-500" : ""
-                        }`}
-                    >
-                        مدیریت تخفیف‌ها
-                    </Link>
-                </li>
-                <li className="mb-4">
-                    <Link
-                        to="/seller-dashboard/reports"
-                        className={`block hover:bg-gray-700 p-2 rounded ${
-                            location.pathname === "/seller-dashboard/reports" ? "bg-gray-700 border-r-4 border-blue-500" : ""
-                        }`}
-                    >
-                        گزارشات و آنالیز
-                    </Link>
-                </li>
-                <li className="mb-4">
-                    <Link
-                        to="/seller-dashboard/settings"
-                        className={`block hover:bg-gray-700 p-2 rounded ${
-                            location.pathname === "/seller-dashboard/settings" ? "bg-gray-700 border-r-4 border-blue-500" : ""
-                        }`}
-                    >
-                        تنظیمات
-                    </Link>
-                </li>
-                <li className="mb-4">
-                    <Link
-                        to="/seller-dashboard/team"
-                        className={`block hover:bg-gray-700 p-2 rounded ${
-                            location.pathname === "/seller-dashboard/team" ? "bg-gray-700 border-r-4 border-blue-500" : ""
-                        }`}
-                    >
-                        مدیریت تیم
-                    </Link>
-                </li>
+        <aside
+            className="w-full md:w-64 p-4 min-h-screen"
+            style={{
+                direction: "rtl",
+                backgroundColor: "#00296B",
+                color: "#ffffff",
+                textAlign: "right",
+            }}
+        >
+            <h2 className="text-2xl font-extrabold mb-8 border-b border-[#FDC500] pb-4">پنل فروشنده</h2>
+            <ul className="space-y-2">
+                {menuItems.map(({ to, label }) => {
+                    const isActive = location.pathname === to;
+
+                    return (
+                        <li key={to}>
+                            <Link
+                                to={to}
+                                className={`block px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
+                                    isActive
+                                        ? "bg-[#FFD500] text-[#00296B] border-r-4 border-[#FDC500] shadow-md"
+                                        : "hover:bg-[#003F88] text-white"
+                                }`}
+                            >
+                                {label}
+                            </Link>
+                        </li>
+                    );
+                })}
             </ul>
-        </div>
+        </aside>
     );
 };
 
 export default Sidebar;
+
+////////
+////
+//////
