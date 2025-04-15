@@ -17,7 +17,7 @@ const products: Product[] = [
 
 const DiscountSlider: React.FC = () => {
     return (
-        <div className="bg-gray-100 p-4 rounded-xl flex items-center justify-between">
+        <div className="bg-gray-300 p-4 rounded-xl flex items-center justify-between">
             {/* دکمه نمایش بیشتر */}
             <button className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center">
                 <FaArrowLeft className="ml-2" />

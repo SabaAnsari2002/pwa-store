@@ -28,53 +28,76 @@ const DiscountManagement: React.FC = () => {
     );
 
     return (
-        <div className="p-6" style={{ direction: 'rtl' }}>
-            <h1 className="text-2xl font-bold mb-6">مدیریت تخفیف‌ها و جشنواره‌ها</h1>
+        <div className="bg-[#F5F5F5] p-6 rounded-lg min-h-screen" style={{ direction: 'rtl' }}>
+            {/* عنوان با خط کامل در زیر */}
+            <div className="mb-8">
+                <h2 className="text-4xl font-bold text-[#00296B] text-center pb-3 relative">
+                    مدیریت تخفیف‌ها و جشنواره‌ها
+                    <span className="absolute bottom-0 right-0 left-0 h-1.5 bg-[#FDC500] rounded-full mx-auto w-full max-w-2xl"></span>
+                </h2>
+            </div>
 
             {/* فرم افزودن تخفیف جدید */}
-            <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                <h2 className="text-xl font-bold mb-4">افزودن تخفیف جدید</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input
-                        type="text"
-                        placeholder="کد تخفیف"
-                        value={newDiscount.code}
-                        onChange={(e) => setNewDiscount({ ...newDiscount, code: e.target.value })}
-                        className="p-2 border rounded"
-                    />
-                    <select
-                        value={newDiscount.type}
-                        onChange={(e) => setNewDiscount({ ...newDiscount, type: e.target.value })}
-                        className="p-2 border rounded"
-                    >
-                        <option value="درصدی">درصدی</option>
-                        <option value="ثابت">ثابت</option>
-                    </select>
-                    <input
-                        type="number"
-                        placeholder="مقدار تخفیف"
-                        value={newDiscount.value}
-                        onChange={(e) => setNewDiscount({ ...newDiscount, value: +e.target.value })}
-                        className="p-2 border rounded"
-                    />
-                    <input
-                        type="text"
-                        placeholder="تاریخ شروع (۱۴۰۲/۰۷/۰۱)"
-                        value={newDiscount.startDate}
-                        onChange={(e) => setNewDiscount({ ...newDiscount, startDate: e.target.value })}
-                        className="p-2 border rounded"
-                    />
-                    <input
-                        type="text"
-                        placeholder="تاریخ پایان (۱۴۰۲/۰۷/۱۰)"
-                        value={newDiscount.endDate}
-                        onChange={(e) => setNewDiscount({ ...newDiscount, endDate: e.target.value })}
-                        className="p-2 border rounded"
-                    />
+            <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#FDC500] mb-8">
+                <h2 className="text-lg font-semibold text-[#00509D] mb-4">افزودن تخفیف جدید</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label className="block text-sm font-medium text-[#00509D] mb-1">کد تخفیف</label>
+                        <input
+                            type="text"
+                            placeholder="مثال: SUMMER20"
+                            value={newDiscount.code}
+                            onChange={(e) => setNewDiscount({ ...newDiscount, code: e.target.value })}
+                            className="p-3 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#00509D]"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-[#00509D] mb-1">نوع تخفیف</label>
+                        <select
+                            value={newDiscount.type}
+                            onChange={(e) => setNewDiscount({ ...newDiscount, type: e.target.value })}
+                            className="p-3 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#00509D]"
+                        >
+                            <option value="درصدی">درصدی</option>
+                            <option value="ثابت">ثابت</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-[#00509D] mb-1">
+                            {newDiscount.type === "درصدی" ? "درصد تخفیف" : "مقدار تخفیف (تومان)"}
+                        </label>
+                        <input
+                            type="number"
+                            placeholder={newDiscount.type === "درصدی" ? "مثال: 20" : "مثال: 10000"}
+                            value={newDiscount.value}
+                            onChange={(e) => setNewDiscount({ ...newDiscount, value: +e.target.value })}
+                            className="p-3 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#00509D]"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-[#00509D] mb-1">تاریخ شروع</label>
+                        <input
+                            type="text"
+                            placeholder="۱۴۰۲/۰۷/۰۱"
+                            value={newDiscount.startDate}
+                            onChange={(e) => setNewDiscount({ ...newDiscount, startDate: e.target.value })}
+                            className="p-3 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#00509D]"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-[#00509D] mb-1">تاریخ پایان</label>
+                        <input
+                            type="text"
+                            placeholder="۱۴۰۲/۰۷/۱۰"
+                            value={newDiscount.endDate}
+                            onChange={(e) => setNewDiscount({ ...newDiscount, endDate: e.target.value })}
+                            className="p-3 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#00509D]"
+                        />
+                    </div>
                 </div>
                 <button
                     onClick={handleAddDiscount}
-                    className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+                    className="bg-[#00509D] text-white px-6 py-3 rounded-lg hover:bg-[#003F7D] transition"
                 >
                     افزودن تخفیف
                 </button>
@@ -87,38 +110,39 @@ const DiscountManagement: React.FC = () => {
                     placeholder="جستجوی تخفیف‌ها..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="p-2 border rounded w-full md:w-1/2"
+                    className="p-3 border border-gray-300 rounded-lg w-full md:w-1/2 focus:outline-none focus:ring-2 focus:ring-[#00509D]"
                 />
             </div>
 
             {/* لیست تخفیف‌ها */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-xl font-bold mb-4">لیست تخفیف‌ها</h2>
-                <table className="min-w-full bg-white">
-                    <thead>
-                    <tr>
-                        <th className="py-2 px-4 border-b">کد تخفیف</th>
-                        <th className="py-2 px-4 border-b">نوع</th>
-                        <th className="py-2 px-4 border-b">مقدار</th>
-                        <th className="py-2 px-4 border-b">تاریخ شروع</th>
-                        <th className="py-2 px-4 border-b">تاریخ پایان</th>
-                        <th className="py-2 px-4 border-b">وضعیت</th>
-                        <th className="py-2 px-4 border-b">عملیات</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {filteredDiscounts.map((discount) => (
-                        <tr key={discount.id}>
-                            <td className="py-2 px-4 border-b">{discount.code}</td>
-                            <td className="py-2 px-4 border-b">{discount.type}</td>
-                            <td className="py-2 px-4 border-b">
-                                {discount.type === "درصدی" ? `${discount.value}%` : `${discount.value.toLocaleString()} تومان`}
-                            </td>
-                            <td className="py-2 px-4 border-b">{discount.startDate}</td>
-                            <td className="py-2 px-4 border-b">{discount.endDate}</td>
-                            <td className="py-2 px-4 border-b">
+            <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#FDC500]">
+                <h2 className="text-lg font-semibold text-[#00509D] mb-4">لیست تخفیف‌ها</h2>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white">
+                        <thead>
+                        <tr>
+                            <th className="py-3 px-4 border-b text-[#00509D]">کد تخفیف</th>
+                            <th className="py-3 px-4 border-b text-[#00509D]">نوع</th>
+                            <th className="py-3 px-4 border-b text-[#00509D]">مقدار</th>
+                            <th className="py-3 px-4 border-b text-[#00509D]">تاریخ شروع</th>
+                            <th className="py-3 px-4 border-b text-[#00509D]">تاریخ پایان</th>
+                            <th className="py-3 px-4 border-b text-[#00509D]">وضعیت</th>
+                            <th className="py-3 px-4 border-b text-[#00509D]">عملیات</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {filteredDiscounts.map((discount) => (
+                            <tr key={discount.id}>
+                                <td className="py-3 px-4 border-b text-[#000000] font-medium">{discount.code}</td>
+                                <td className="py-3 px-4 border-b text-[#000000]">{discount.type}</td>
+                                <td className="py-3 px-4 border-b text-[#000000]">
+                                    {discount.type === "درصدی" ? `${discount.value}%` : `${discount.value.toLocaleString()} تومان`}
+                                </td>
+                                <td className="py-3 px-4 border-b text-[#000000]">{discount.startDate}</td>
+                                <td className="py-3 px-4 border-b text-[#000000]">{discount.endDate}</td>
+                                <td className="py-3 px-4 border-b">
                                     <span
-                                        className={`p-1 rounded ${
+                                        className={`px-3 py-1 rounded-full text-sm ${
                                             discount.status === "فعال"
                                                 ? "bg-green-100 text-green-800"
                                                 : "bg-red-100 text-red-800"
@@ -126,33 +150,34 @@ const DiscountManagement: React.FC = () => {
                                     >
                                         {discount.status}
                                     </span>
-                            </td>
-                            <td className="py-2 px-4 border-b">
-                                <button
-                                    onClick={() => alert(`ویرایش تخفیف ${discount.code}`)}
-                                    className="bg-yellow-500 text-white px-2 py-1 rounded mr-2"
-                                >
-                                    ویرایش
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        const confirmDelete = window.confirm(
-                                            `آیا از حذف تخفیف ${discount.code} مطمئن هستید؟`
-                                        );
-                                        if (confirmDelete) {
-                                            const updatedDiscounts = discounts.filter((d) => d.id !== discount.id);
-                                            setDiscounts(updatedDiscounts);
-                                        }
-                                    }}
-                                    className="bg-red-500 text-white px-2 py-1 rounded"
-                                >
-                                    حذف
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
+                                </td>
+                                <td className="py-3 px-4 border-b">
+                                    <button
+                                        onClick={() => alert(`ویرایش تخفیف ${discount.code}`)}
+                                        className="bg-[#FDC500] text-[#00296B] px-4 py-2 rounded-lg hover:bg-[#FFD700] transition mr-2"
+                                    >
+                                        ویرایش
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            const confirmDelete = window.confirm(
+                                                `آیا از حذف تخفیف ${discount.code} مطمئن هستید؟`
+                                            );
+                                            if (confirmDelete) {
+                                                const updatedDiscounts = discounts.filter((d) => d.id !== discount.id);
+                                                setDiscounts(updatedDiscounts);
+                                            }
+                                        }}
+                                        className="bg-[#D10000] text-white px-4 py-2 rounded-lg hover:bg-[#B00000] transition"
+                                    >
+                                        حذف
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
