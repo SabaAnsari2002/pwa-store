@@ -1,12 +1,12 @@
 import React from "react";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 import Slider from "../components/Slider";
 import Categories from "../components/Categories";
 import Brands from "../components/Brands";
 import DiscountedProducts from "../components/DiscountedProducts";
 import BestSellingProducts from "../components/BestSellingProducts";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
 import Collection from "../components/Collection";
 import DiscountSlider from "../components/DiscountSlider";
 import Collection2 from "../components/Collection2";
@@ -17,7 +17,7 @@ interface HomeProps {
     setUser: (user: string | null) => void;
 }
 
-const Home: React.FC<HomeProps> = ({user, setUser}) => {
+const Home: React.FC<HomeProps> = ({ user, setUser }) => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -26,55 +26,57 @@ const Home: React.FC<HomeProps> = ({user, setUser}) => {
     };
 
     return (
-        <div className="bg-pink-100 min-h-screen">
-            <Header/>
-            <div className="container mx-auto px-4">
-                <div className="flex justify-between items-center pt-40">
-                    <h1 className="text-2xl font-bold">
+        <div className="bg-[#F5F5F5] min-h-screen">
+            <Header />
+            <div className="container mx-auto px-4 pt-44 pb-10">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+                    <h1 className="text-3xl font-bold text-[#00296B]">
                         {user ? `خوش آمدید، ${user}` : "به فروشگاه ما خوش آمدید!"}
                     </h1>
-                    {user ? (
-                        <div>
+                    <div className="mt-4 md:mt-0 flex gap-3">
+                        {user ? (
+                            <>
+                                <button
+                                    className="bg-[#00509D] hover:bg-[#003f7f] text-white px-4 py-2 rounded"
+                                    onClick={() => navigate("/customer-dashboard")}
+                                >
+                                    پروفایل
+                                </button>
+                                <button
+                                    className="bg-[#FDC500] hover:bg-yellow-400 text-black px-4 py-2 rounded"
+                                    onClick={() => navigate("/seller-dashboard")}
+                                >
+                                    ایجاد غرفه
+                                </button>
+                                <button
+                                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+                                    onClick={handleLogout}
+                                >
+                                    خروج
+                                </button>
+                            </>
+                        ) : (
                             <button
-                                className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
-                                onClick={() => navigate("/customer-dashboard")}
+                                className="bg-[#00509D] hover:bg-[#003f7f] text-white px-4 py-2 rounded"
+                                onClick={() => navigate("/login")}
                             >
-                                پروفایل
+                                ورود / ثبت‌نام
                             </button>
-                            <button
-                                className="bg-purple-500 text-white px-4 py-2 rounded mr-2"
-                                onClick={() => navigate("/seller-dashboard")}
-                            >
-                                ایجاد غرفه
-                            </button>
-
-                            <button
-                                className="bg-red-500 text-white px-4 py-2 rounded"
-                                onClick={handleLogout}
-                            >
-                                خروج
-                            </button>
-                        </div>
-                    ) : (
-                        <button
-                            className="bg-blue-500 text-white px-4 py-2 rounded"
-                            onClick={() => navigate("/login")}
-                        >
-                            ورود / ثبت‌نام
-                        </button>
-                    )}
+                        )}
+                    </div>
                 </div>
-                <Slider/>
-                <Collection/>
-                <DiscountSlider/>
-                <Categories/>
-                <Collection2/>
-                <Brands/>
-                <DiscountedProducts/>
-                <HotProducts/>
-                <BestSellingProducts/>
+
+                <Slider />
+                <Collection />
+                <DiscountSlider />
+                <Categories />
+                <Collection2 />
+                <Brands />
+                <DiscountedProducts />
+                <HotProducts />
+                <BestSellingProducts />
             </div>
-            <Footer/>
+            <Footer />
         </div>
     );
 };
