@@ -37,6 +37,8 @@ const Header: React.FC = () => {
 					<a href="/about" className="hover:text-[#FDC500]">درباره ما</a>
 					<a href="/shop" className="hover:text-[#FDC500]">فروشگاه</a>
 					<a href="/pages" className="hover:text-[#FDC500]">دسته بندی‌ها</a>
+					<CategoryMenu />
+
 					<a href="/blog" className="hover:text-[#FDC500]">وبلاگ</a>
 					<a href="/contact" className="hover:text-[#FDC500]">ارتباط با ما</a>
 				</div>
