@@ -1,52 +1,117 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaUser, FaLock, FaEnvelope, FaPhone } from "react-icons/fa";
 
 const Register: React.FC = () => {
-  const [newUser, setNewUser] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+    email: "",
+    phone: ""
+  });
+
   const navigate = useNavigate();
 
-  const handleRegister = () => {
-    if (newUser.trim() && password.trim()) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.username.trim() && formData.password.trim()) {
       alert("ثبت‌نام موفق! اکنون وارد شوید.");
       navigate("/login");
     }
   };
 
   return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-pink-500 to-orange-500">
-        <div className="bg-white p-8 rounded-2xl shadow-lg w-96">
-          <h2 className="text-3xl font-bold text-center text-gray-700 mb-6">ثبت‌نام</h2>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#00509D] to-[#00296B] p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-[#FDC500] p-4 text-center">
+              <h2 className="text-2xl font-bold text-[#00296B]">ثبت‌نام در سامانه</h2>
+            </div>
 
-          <input
-              type="text"
-              placeholder="نام کاربری جدید"
-              value={newUser}
-              onChange={(e) => setNewUser(e.target.value)}
-              className="w-full p-3 mb-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500"
-          />
+            <form onSubmit={handleRegister} className="p-6 space-y-5">
+              <div className="relative">
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#00509D]">
+                  <FaUser />
+                </div>
+                <input
+                    name="username"
+                    type="text"
+                    placeholder="نام کاربری"
+                    value={formData.username}
+                    onChange={handleChange}
+                    className="w-full pr-10 pl-4 py-3 border-b-2 border-[#E5E5E5] focus:border-[#00509D] focus:outline-none bg-transparent transition-all"
+                    required
+                />
+              </div>
 
-          <input
-              type="password"
-              placeholder="رمز عبور"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 mb-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500"
-          />
+              <div className="relative">
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#00509D]">
+                  <FaLock />
+                </div>
+                <input
+                    name="password"
+                    type="password"
+                    placeholder="رمز عبور"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full pr-10 pl-4 py-3 border-b-2 border-[#E5E5E5] focus:border-[#00509D] focus:outline-none bg-transparent transition-all"
+                    required
+                />
+              </div>
 
-          <button
-              className="w-full bg-pink-600 hover:bg-pink-700 text-white py-3 rounded-xl transition-all"
-              onClick={handleRegister}
-          >
-            ثبت‌نام
-          </button>
+              <div className="relative">
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#00509D]">
+                  <FaEnvelope />
+                </div>
+                <input
+                    name="email"
+                    type="email"
+                    placeholder="آدرس ایمیل"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full pr-10 pl-4 py-3 border-b-2 border-[#E5E5E5] focus:border-[#00509D] focus:outline-none bg-transparent transition-all"
+                    required
+                />
+              </div>
 
-          <p className="text-center mt-4 text-gray-600">
-            حساب دارید؟{" "}
-            <button className="text-pink-500 hover:underline" onClick={() => navigate("/login")}>
-              وارد شوید
-            </button>
-          </p>
+              <div className="relative">
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#00509D]">
+                  <FaPhone />
+                </div>
+                <input
+                    name="phone"
+                    type="tel"
+                    placeholder="شماره تلفن"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full pr-10 pl-4 py-3 border-b-2 border-[#E5E5E5] focus:border-[#00509D] focus:outline-none bg-transparent transition-all"
+                />
+              </div>
+
+              <button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-[#00509D] to-[#00296B] text-white py-3 rounded-lg mt-6 shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1"
+              >
+                ثبت‌نام
+              </button>
+
+              <div className="text-center pt-4">
+                <span className="text-[#666]">حساب دارید؟ </span>
+                <button
+                    type="button"
+                    onClick={() => navigate("/login")}
+                    className="text-[#00509D] font-medium hover:text-[#00296B] transition-colors"
+                >
+                  ورود به حساب
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
   );
