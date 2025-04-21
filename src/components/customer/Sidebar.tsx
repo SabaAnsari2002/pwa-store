@@ -28,7 +28,7 @@ const Sidebar: React.FC = () => {
                 color: "#ffffff",
             }}
         >
-            <h2 className="text-2xl font-extrabold mb-8 border-b border-[#FDC500] pb-4">پنل فروشنده</h2>
+            <h2 className="text-2xl font-extrabold mb-8 border-b border-[#FDC500] pb-4">پنل مشتری</h2>
             <ul className="space-y-2">
                 {menuItems.map(({ to, label }) => {
                     const isActive = location.pathname === to;
