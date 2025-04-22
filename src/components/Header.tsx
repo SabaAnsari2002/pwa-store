@@ -4,13 +4,17 @@ import CategoryMenu from "../pages/CategoryMenu";
 
 const Header: React.FC = () => {
 	const [user, setUser] = useState<string | null>(null);
+	const [isSeller, setIsSeller] = useState<boolean>(false);
 	const [dropdownOpen, setDropdownOpen] = useState(false);
 	const navigate = useNavigate();
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		const savedUser = localStorage.getItem("user");
+		const sellerStatus = localStorage.getItem("isSeller") === "true";
+
 		if (savedUser) setUser(savedUser);
+		if (sellerStatus) setIsSeller(true);
 
 		const handleClickOutside = (event: MouseEvent) => {
 			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -24,8 +28,16 @@ const Header: React.FC = () => {
 
 	const handleLogout = () => {
 		localStorage.removeItem("user");
+		localStorage.removeItem("isSeller");
 		setUser(null);
+		setIsSeller(false);
 		navigate("/");
+	};
+
+	const handleSellerLogout = () => {
+		localStorage.removeItem("isSeller");
+		setIsSeller(false);
+		setDropdownOpen(false);
 	};
 
 	const goToProfile = () => {
@@ -33,8 +45,17 @@ const Header: React.FC = () => {
 		navigate("/customer-dashboard");
 	};
 
-	const goToCreateBooth = () => {
+	const goToSellerRegister = () => {
 		setDropdownOpen(false);
+		navigate("/seller-register");
+	};
+
+	const goToSellerLogin = () => {
+		setDropdownOpen(false);
+		navigate("/seller-login");
+	};
+
+	const goToSellerDashboard = () => {
 		navigate("/seller-dashboard");
 	};
 
@@ -56,6 +77,15 @@ const Header: React.FC = () => {
 						</svg>
 					</a>
 
+					{isSeller && (
+						<button
+							className="bg-[#FDC500] text-black px-4 py-1 rounded hover:bg-yellow-400"
+							onClick={goToSellerDashboard}
+						>
+							ورود به غرفه
+						</button>
+					)}
+
 					{user ? (
 						<button onClick={() => setDropdownOpen(!dropdownOpen)} title="پروفایل">
 							<svg className="w-6 h-6 text-white hover:text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,7 +105,20 @@ const Header: React.FC = () => {
 						<div className="absolute top-10 left-0 bg-white text-black shadow-md rounded-lg p-4 w-48 text-right z-50">
 							<p className="mb-2 font-semibold text-sm truncate">{user}</p>
 							<button onClick={goToProfile} className="block w-full text-right hover:text-[#00509D]">پروفایل</button>
-							<button onClick={goToCreateBooth} className="block w-full text-right hover:text-[#00509D] mt-2">ایجاد غرفه</button>
+							{isSeller ? (
+								<button onClick={handleSellerLogout} className="block w-full text-right hover:text-[#00509D] mt-2">
+									خروج از غرفه
+								</button>
+							) : (
+								<>
+									<button onClick={goToSellerRegister} className="block w-full text-right hover:text-[#00509D] mt-2">
+										ایجاد غرفه
+									</button>
+									<button onClick={goToSellerLogin} className="block w-full text-right hover:text-[#00509D] mt-2">
+										ورود فروشنده
+									</button>
+								</>
+							)}
 							<button onClick={handleLogout} className="block w-full text-right text-red-600 mt-2 hover:text-red-800">خروج</button>
 						</div>
 					)}
