@@ -19,12 +19,29 @@ const Login: React.FC<LoginProps> = ({ setUser }) => {
     setCredentials(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (credentials.username.trim() && credentials.password.trim()) {
-      localStorage.setItem("user", credentials.username);
-      setUser(credentials.username);
-      navigate("/");
+    try {
+      const response = await fetch("http://localhost:8000/api/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(credentials)
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem("user", data.username);
+        localStorage.setItem("accessToken", data.access);
+        setUser(data.username);
+        navigate("/");
+      } else {
+        alert(data.error || "مشکلی در ورود به حساب وجود دارد.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("خطا در اتصال به سرور.");
     }
   };
 
