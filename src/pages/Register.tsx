@@ -17,13 +17,30 @@ const Register: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.username.trim() && formData.password.trim()) {
-      alert("ثبت‌نام موفق! اکنون وارد شوید.");
-      navigate("/login");
+    try {
+      const response = await fetch("http://localhost:8000/api/register/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert("ثبت‌نام موفق! اکنون وارد شوید.");
+        navigate("/login");
+      } else {
+        alert(data.error || "مشکلی در ثبت نام وجود دارد.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("خطا در اتصال به سرور.");
     }
   };
+
 
   return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#00509D] to-[#00296B] p-4">
