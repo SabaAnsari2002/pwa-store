@@ -19,9 +19,10 @@ const Home: React.FC = () => {
             <Header />
             <div className="container mx-auto px-4 pt-44 pb-10">
                 <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold text-[#00296B]">
-                        {user ? `خوش آمدید، ${user}` : "به فروشگاه ما خوش آمدید!"}
+                    <h1 className="text-3xl font-bold text-[#00296B] text-right w-full">
+                        {user ? `خوش آمدید، ${user}` : "!به فروشگاه ما خوش آمدید"}
                     </h1>
+
                 </div>
 
                 <Slider />
