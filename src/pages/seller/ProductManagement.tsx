@@ -96,9 +96,13 @@ const ProductManagement: React.FC = () => {
                         <label className="block text-[#00509D] mb-1">قیمت (تومان)</label>
                         <input
                             type="number"
+                            min="0"
                             placeholder="قیمت"
                             value={newProduct.price}
-                            onChange={(e) => setNewProduct({ ...newProduct, price: +e.target.value })}
+                            onChange={(e) => {
+                                const value = Math.max(0, +e.target.value);
+                                setNewProduct({ ...newProduct, price: value });
+                            }}
                             className="p-2 border rounded w-full focus:ring-2 focus:ring-[#00509D] focus:border-transparent"
                         />
                     </div>
@@ -106,9 +110,13 @@ const ProductManagement: React.FC = () => {
                         <label className="block text-[#00509D] mb-1">موجودی</label>
                         <input
                             type="number"
+                            min="0"
                             placeholder="موجودی"
                             value={newProduct.stock}
-                            onChange={(e) => setNewProduct({ ...newProduct, stock: +e.target.value })}
+                            onChange={(e) => {
+                                const value = Math.max(0, +e.target.value);
+                                setNewProduct({ ...newProduct, stock: value });
+                            }}
                             className="p-2 border rounded w-full focus:ring-2 focus:ring-[#00509D] focus:border-transparent"
                         />
                     </div>
