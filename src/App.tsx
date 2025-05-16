@@ -35,6 +35,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Blog from "./pages/Blog";
 import BlogPostDetail from "./pages/BlogPostDetail";
+import Shop from  "./pages/Shop";
 
 const App: React.FC = () => {
     const [user, setUser] = useState<string | null>(localStorage.getItem("user"));
@@ -54,6 +55,7 @@ const App: React.FC = () => {
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:id" element={<BlogPostDetail />} />
+                <Route path="/shop" element={<Shop />} />
 
                 {/* مسیرهای جدید فروشنده */}
                 <Route path="/seller-register" element={<SellerRegister setIsSeller={setIsSeller} />} />
