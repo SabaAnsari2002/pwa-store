@@ -36,7 +36,7 @@ import Contact from "./pages/Contact";
 import Blog from "./pages/Blog";
 import BlogPostDetail from "./pages/BlogPostDetail";
 import Shop from  "./pages/Shop";
-
+import SubCategoryProducts from "./pages/SubCategoryProducts";
 const App: React.FC = () => {
     const [user, setUser] = useState<string | null>(localStorage.getItem("user"));
     const [isSeller, setIsSeller] = useState<boolean>(localStorage.getItem("isSeller") === "true"); // اضافه شده
@@ -56,7 +56,7 @@ const App: React.FC = () => {
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:id" element={<BlogPostDetail />} />
                 <Route path="/shop" element={<Shop />} />
-
+                <Route path="/subcategory-products/:id" element={<SubCategoryProducts />} />
                 {/* مسیرهای جدید فروشنده */}
                 <Route path="/seller-register" element={<SellerRegister setIsSeller={setIsSeller} />} />
                 <Route path="/seller-login" element={<SellerLogin setIsSeller={setIsSeller} />} />
