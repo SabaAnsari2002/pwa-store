@@ -262,7 +262,11 @@ const SubCategoryProducts: React.FC = () => {
                 {filteredProducts.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredProducts.map(product => (
-                            <div key={product.id} className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow">
+                            <div
+                                key={product.id}
+                                className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                                onClick={() => navigate(`/product/${product.id}`)}
+                            >
                                 <div className="h-48 bg-gray-200 flex items-center justify-center">
                                     <img
                                         src={product.image}
@@ -290,9 +294,6 @@ const SubCategoryProducts: React.FC = () => {
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="font-bold text-lg text-[#00296B]">{formatPrice(product.price)} تومان</span>
-                                        <button className="bg-[#FDC500] hover:bg-[#FFD700] text-black px-3 py-1 rounded text-sm font-medium transition-colors">
-                                            افزودن به سبد
-                                        </button>
                                     </div>
                                 </div>
                             </div>
