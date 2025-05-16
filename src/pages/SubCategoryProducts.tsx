@@ -143,7 +143,7 @@ const SubCategoryProducts: React.FC = () => {
     return (
         <div className="flex bg-[#E5E5E5] min-h-screen" style={{ direction: "rtl" }}>
             {/* Sidebar Filters */}
-            <aside className="w-1/4 bg-[#00296B] text-white p-4 h-screen sticky top-0 overflow-y-auto">
+            <aside className="w-1/5 bg-[#00296B] text-white p-4 h-screen sticky top-0 overflow-y-auto">
                 <h2 className="text-xl font-bold mb-6 text-[#FDC500] border-b border-[#00509D] pb-2">فیلترها</h2>
 
                 {/* Categories Accordion */}
