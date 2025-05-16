@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Subcategory {
     id: number;
@@ -116,9 +117,14 @@ const categories: Category[] = [
 
 const Shop: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+    const navigate = useNavigate();
 
     const handleFilter = (id: number | null) => {
         setSelectedCategory(id);
+    };
+
+    const handleSubCategoryClick = (subCategoryName: string) => {
+        navigate(`/subcategory-products/${subCategoryName}`);
     };
 
     const filteredCategories = selectedCategory
@@ -172,6 +178,7 @@ const Shop: React.FC = () => {
                                 <div
                                     key={sub.id}
                                     className="bg-[#FDC500] text-black rounded-lg shadow hover:bg-[#00509D] hover:text-white transition-all cursor-pointer p-6 text-center font-semibold"
+                                    onClick={() => handleSubCategoryClick(sub.name)}
                                 >
                                     {sub.name}
                                 </div>
