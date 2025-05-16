@@ -12,6 +12,119 @@ interface Product {
     rating: number;
 }
 
+interface Subcategory {
+    id: number;
+    name: string;
+}
+
+interface Category {
+    id: number;
+    name: string;
+    subcategories: Subcategory[];
+}
+const categories: Category[] = [
+    {
+        id: 1,
+        name: "لوازم خانگی",
+        subcategories: [
+            { id: 11, name: "یخچال" },
+            { id: 12, name: "ماشین لباسشویی" },
+            { id: 13, name: "ظرفشویی" },
+            { id: 14, name: "اجاق گاز" },
+        ],
+    },
+    {
+        id: 2,
+        name: "مد و پوشاک",
+        subcategories: [
+            { id: 21, name: "پیراهن" },
+            { id: 22, name: "شلوار" },
+            { id: 23, name: "کفش" },
+            { id: 24, name: "اکسسوری" },
+        ],
+    },
+    {
+        id: 3,
+        name: "دیجیتال",
+        subcategories: [
+            { id: 31, name: "موبایل" },
+            { id: 32, name: "لپ تاپ" },
+            { id: 33, name: "تبلت" },
+            { id: 34, name: "ساعت هوشمند" },
+        ],
+    },
+    {
+        id: 4,
+        name: "زیبایی و سلامت",
+        subcategories: [
+            { id: 41, name: "لوازم آرایشی" },
+            { id: 42, name: "مراقبت پوست" },
+            { id: 43, name: "عطر" },
+            { id: 44, name: "مراقبت مو" },
+        ],
+    },
+    {
+        id: 5,
+        name: "ورزش و سفر",
+        subcategories: [
+            { id: 51, name: "دوچرخه" },
+            { id: 52, name: "چمدان" },
+            { id: 53, name: "کفش ورزشی" },
+            { id: 54, name: "تجهیزات کوهنوردی" },
+        ],
+    },
+    {
+        id: 6,
+        name: "کتاب و لوازم تحریر",
+        subcategories: [
+            { id: 61, name: "کتاب داستان" },
+            { id: 62, name: "کتاب آموزشی" },
+            { id: 63, name: "دفتر" },
+            { id: 64, name: "نوشت‌افزار" },
+        ],
+    },
+    {
+        id: 7,
+        name: "کودک و نوزاد",
+        subcategories: [
+            { id: 71, name: "لباس کودک" },
+            { id: 72, name: "اسباب بازی" },
+            { id: 73, name: "لوازم بهداشتی" },
+            { id: 74, name: "کالسکه" },
+        ],
+    },
+    {
+        id: 8,
+        name: "ابزارآلات صنعتی",
+        subcategories: [
+            { id: 81, name: "دریل" },
+            { id: 82, name: "پیچ گوشتی برقی" },
+            { id: 83, name: "اره برقی" },
+            { id: 84, name: "ابزار دستی" },
+        ],
+    },
+    {
+        id: 9,
+        name: "خودرو و موتورسیکلت",
+        subcategories: [
+            { id: 91, name: "لوازم یدکی خودرو" },
+            { id: 92, name: "موتورسیکلت" },
+            { id: 93, name: "روغن و فیلتر" },
+            { id: 94, name: "تجهیزات جانبی" },
+        ],
+    },
+    {
+        id: 10,
+        name: "خوراک و نوشیدنی",
+        subcategories: [
+            { id: 101, name: "نوشیدنی‌ها" },
+            { id: 102, name: "شیرینی و شکلات" },
+            { id: 103, name: "میوه و سبزی" },
+            { id: 104, name: "محصولات لبنی" },
+        ],
+    },
+];
+
 const mockProducts: Product[] = [
     {
         id: 1,
@@ -101,9 +214,9 @@ const SubCategoryProducts: React.FC = () => {
 
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000000]);
     const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-    const [showCategoryFilters, setShowCategoryFilters] = useState(false);
+    const [expandedCategories, setExpandedCategories] = useState<number[]>([]);
+    const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
 
-    // استفاده مستقیم از نام زیردسته (id)
     const currentSubcategory = id || "";
 
     const brands = Array.from(new Set(
@@ -112,14 +225,13 @@ const SubCategoryProducts: React.FC = () => {
             .map(p => p.brand)
     ));
 
-    const categories = Array.from(new Set(mockProducts.map(p => p.category)));
-
-    const filteredProducts = mockProducts.filter(product => {
-        if (product.subcategory !== currentSubcategory) return false;
-        if (product.price < priceRange[0] || product.price > priceRange[1]) return false;
-        if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) return false;
-        return true;
-    });
+    const toggleCategory = (categoryId: number) => {
+        setExpandedCategories(prev =>
+            prev.includes(categoryId)
+                ? prev.filter(id => id !== categoryId)
+                : [...prev, categoryId]
+        );
+    };
 
     const handleBrandToggle = (brand: string) => {
         setSelectedBrands(prev =>
@@ -140,30 +252,58 @@ const SubCategoryProducts: React.FC = () => {
         return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     };
 
+    const filteredProducts = mockProducts.filter(product => {
+        if (product.subcategory !== currentSubcategory) return false;
+        if (product.price < priceRange[0] || product.price > priceRange[1]) return false;
+        if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) return false;
+        return true;
+    });
+
     return (
         <div className="flex bg-[#E5E5E5] min-h-screen" style={{ direction: "rtl" }}>
             {/* Sidebar Filters */}
             <aside className="w-1/5 bg-[#00296B] text-white p-4 h-screen sticky top-0 overflow-y-auto">
-                <h2 className="text-xl font-bold mb-6 text-[#FDC500] border-b border-[#00509D] pb-2">فیلترها</h2>
+                <h2 className="text-xl font-bold mb-6 text-[#FDC500] border-b border-[#00509D] pb-2">دسته‌بندی‌ها</h2>
 
-                {/* Categories Accordion */}
-                <div className="mb-6">
+                {/* Categories List */}
+                <div className="space-y-2">
+                    {/* دکمه اصلی برای باز/بسته کردن آکاردئون */}
                     <button
-                        onClick={() => setShowCategoryFilters(!showCategoryFilters)}
-                        className="flex justify-between items-center w-full text-right px-3 py-2 rounded-lg bg-[#00509D] hover:bg-[#003F7D] transition-colors"
+                        className="flex justify-between items-center cursor-pointer p-2 bg-[#00509D] hover:bg-[#003F7D] rounded-lg w-full"
+                        onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
                     >
                         <span>دسته‌بندی‌ها</span>
-                        <span>{showCategoryFilters ? "−" : "+"}</span>
+                        <span>{isCategoriesOpen ? '−' : '+'}</span>
                     </button>
-                    {showCategoryFilters && (
-                        <div className="mt-2 pl-4 space-y-2">
+
+                    {/* محتوای آکاردئون */}
+                    {isCategoriesOpen && (
+                        <div className="mt-2 space-y-2">
                             {categories.map(category => (
-                                <div
-                                    key={category}
-                                    className="cursor-pointer hover:text-[#FDC500] py-1"
-                                    onClick={() => navigate(`/category/${category}`)}
-                                >
-                                    {category}
+                                <div key={category.id} className="mb-2">
+                                    <div
+                                        className="flex justify-between items-center cursor-pointer p-2 hover:bg-[#00509D] rounded-lg"
+                                        onClick={() => toggleCategory(category.id)}
+                                    >
+                                        <span>{category.name}</span>
+                                        <span>
+                            {expandedCategories.includes(category.id) ? '−' : '+'}
+                        </span>
+                                    </div>
+
+                                    {expandedCategories.includes(category.id) && (
+                                        <div className="pr-4 mt-1 space-y-1">
+                                            {category.subcategories.map(sub => (
+                                                <div
+                                                    key={sub.id}
+                                                    className={`p-2 rounded-lg cursor-pointer ${currentSubcategory === sub.name ? 'bg-[#FDC500] text-black' : 'hover:bg-[#003F7D]'}`}
+                                                    onClick={() => navigate(`/subcategory-products/${sub.name}`)}
+                                                >
+                                                    {sub.name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -171,7 +311,7 @@ const SubCategoryProducts: React.FC = () => {
                 </div>
 
                 {/* Price Range Filter */}
-                <div className="mb-6">
+                <div className="mt-6 mb-6">
                     <h3 className="font-semibold mb-3 text-[#FDC500]">محدوده قیمت</h3>
                     <div className="px-2">
                         <input
