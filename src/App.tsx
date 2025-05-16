@@ -5,7 +5,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CategoryPage from "./pages/CategoryPage";
 import SubCategoryPage from "./pages/SubCategoryPage";
-import ProductDetailPage from "./pages/ProductDetailPage";
 import SellerDashboard from "./pages/seller/SellerDashboard";
 import DashboardContent from "./pages/seller/DashboardContent";
 import ProductManagement from "./pages/seller/ProductManagement";
@@ -37,6 +36,7 @@ import Blog from "./pages/Blog";
 import BlogPostDetail from "./pages/BlogPostDetail";
 import Shop from  "./pages/Shop";
 import SubCategoryProducts from "./pages/SubCategoryProducts";
+import ProductDetail from "./pages/ProductDetail";
 const App: React.FC = () => {
     const [user, setUser] = useState<string | null>(localStorage.getItem("user"));
     const [isSeller, setIsSeller] = useState<boolean>(localStorage.getItem("isSeller") === "true"); // اضافه شده
@@ -50,13 +50,14 @@ const App: React.FC = () => {
                 <Route path="/register" element={<Register />} />
                 <Route path="/category/:id" element={<CategoryPage />} />
                 <Route path="/subcategory/:id" element={<SubCategoryPage />} />
-                <Route path="/product/:id" element={<ProductDetailPage />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:id" element={<BlogPostDetail />} />
                 <Route path="/shop" element={<Shop />} />
                 <Route path="/subcategory-products/:id" element={<SubCategoryProducts />} />
+                <Route path="/product/:id" element={<ProductDetail />} />
+
                 {/* مسیرهای جدید فروشنده */}
                 <Route path="/seller-register" element={<SellerRegister setIsSeller={setIsSeller} />} />
                 <Route path="/seller-login" element={<SellerLogin setIsSeller={setIsSeller} />} />
