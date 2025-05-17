@@ -37,6 +37,8 @@ import BlogPostDetail from "./pages/BlogPostDetail";
 import Shop from  "./pages/Shop";
 import SubCategoryProducts from "./pages/SubCategoryProducts";
 import ProductDetail from "./pages/ProductDetail";
+import ShoppingCart from './pages/ShoppingCart';
+
 const App: React.FC = () => {
     const [user, setUser] = useState<string | null>(localStorage.getItem("user"));
     const [isSeller, setIsSeller] = useState<boolean>(localStorage.getItem("isSeller") === "true"); // اضافه شده
@@ -57,7 +59,7 @@ const App: React.FC = () => {
                 <Route path="/shop" element={<Shop />} />
                 <Route path="/subcategory-products/:id" element={<SubCategoryProducts />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
-
+                <Route path="/shopping-cart" element={<ShoppingCart />} />
                 {/* مسیرهای جدید فروشنده */}
                 <Route path="/seller-register" element={<SellerRegister setIsSeller={setIsSeller} />} />
                 <Route path="/seller-login" element={<SellerLogin setIsSeller={setIsSeller} />} />

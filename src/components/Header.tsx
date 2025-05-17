@@ -71,7 +71,7 @@ const Header: React.FC = () => {
 				/>
 
 				<div className="flex items-center gap-4 mt-2 md:mt-0 relative" ref={dropdownRef}>
-					<a href="/cart" title="سبد خرید">
+					<a href="/shopping-cart" title="سبد خرید">
 						<svg className="w-6 h-6 text-white hover:text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
 						</svg>
@@ -133,6 +133,7 @@ const Header: React.FC = () => {
 					<CategoryMenu />
 					<a href="/blog" className="hover:text-[#FDC500]">وبلاگ</a>
 					<a href="/contact" className="hover:text-[#FDC500]">ارتباط با ما</a>
+					<a href="/shopping-cart" className="hover:text-[#FDC500]">سبد خرید</a>
 				</div>
 			</nav>
 		</header>
