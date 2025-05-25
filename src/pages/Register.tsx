@@ -20,14 +20,12 @@ const Register: React.FC = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:8000/api/register/", {
+
+      const response = await fetch("http://localhost:8000/api/users/register/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
       });
-
       const data = await response.json();
       if (response.ok) {
         alert("ثبت‌نام موفق! اکنون وارد شوید.");
