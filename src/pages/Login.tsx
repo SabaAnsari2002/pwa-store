@@ -22,22 +22,20 @@ const Login: React.FC<LoginProps> = ({ setUser }) => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:8000/api/login/", {
+      const response = await fetch("http://localhost:8000/api/token/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials)
       });
-
       const data = await response.json();
       if (response.ok) {
-        localStorage.setItem("user", data.username);
+        localStorage.setItem("user", credentials.username);
         localStorage.setItem("accessToken", data.access);
-        setUser(data.username);
-        navigate("/");
+
+        setUser(credentials.username);
+        navigate("/"); // هدایت اولیه برای ثبت‌نام فروشنده
       } else {
-        alert(data.error || "مشکلی در ورود به حساب وجود دارد.");
+        alert(data.detail || "مشکلی در ورود به حساب وجود دارد.");
       }
     } catch (error) {
       console.error(error);
