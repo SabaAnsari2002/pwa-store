@@ -1,10 +1,11 @@
+// SellerLogin.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const SellerLogin: React.FC = () => {
     const [credentials, setCredentials] = useState({
-        phone: "",
-        password: ""
+        shopName: "",
+        phone: ""
     });
     const navigate = useNavigate();
 
@@ -13,11 +14,33 @@ const SellerLogin: React.FC = () => {
         setCredentials(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // در اینجا اطلاعات لاگین به سرور ارسال می‌شود
-        localStorage.setItem("isSeller", "true");
-        navigate("/seller-dashboard");
+        try {
+            const response = await fetch("http://localhost:8000/api/sellers/login/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    shop_name: credentials.shopName,
+                    phone: credentials.phone
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem("isSeller", "true");
+                localStorage.setItem("accessToken", data.access);
+                navigate("/seller-dashboard");
+            } else {
+                alert(data.detail || "خطا در ورود. لطفاً اطلاعات را بررسی کنید.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("خطا در اتصال به سرور.");
+        }
     };
 
     return (
@@ -26,22 +49,22 @@ const SellerLogin: React.FC = () => {
                 <h2 className="text-2xl font-bold text-center mb-6 text-[#00296B]">ورود فروشنده</h2>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label className="block text-gray-700 mb-2">تلفن همراه</label>
+                        <label className="block text-gray-700 mb-2">نام غرفه</label>
                         <input
-                            type="tel"
-                            name="phone"
-                            value={credentials.phone}
+                            type="text"
+                            name="shopName"
+                            value={credentials.shopName}
                             onChange={handleChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FDC500]"
                             required
                         />
                     </div>
                     <div className="mb-6">
-                        <label className="block text-gray-700 mb-2">رمز عبور</label>
+                        <label className="block text-gray-700 mb-2">تلفن همراه</label>
                         <input
-                            type="password"
-                            name="password"
-                            value={credentials.password}
+                            type="tel"
+                            name="phone"
+                            value={credentials.phone}
                             onChange={handleChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FDC500]"
                             required

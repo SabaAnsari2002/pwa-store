@@ -1,30 +1,86 @@
-import React, { useState } from "react";
+// ===============================
+// ✅ React Component (ProductManagement.tsx)
+// ===============================
+import React, { useState, useEffect } from "react";
 
-// نمونه داده‌های محصولات
-const initialProducts = [
-    { id: 1, name: "لپ‌تاپ ایسوس", category: "الکترونیک", price: 15000000, stock: 10 },
-    { id: 2, name: "هدفون بلوتوث", category: "الکترونیک", price: 500000, stock: 25 },
-    { id: 3, name: "کتاب React پیشرفته", category: "کتاب", price: 200000, stock: 50 },
-];
+interface Product {
+    id: number;
+    name: string;
+    category: string;
+    price: number;
+    stock: number;
+}
 
 const ProductManagement: React.FC = () => {
-    const [products, setProducts] = useState(initialProducts);
-    const [newProduct, setNewProduct] = useState({ name: "", category: "", price: 0, stock: 0 });
+    const [products, setProducts] = useState<Product[]>([]);
+    const [newProduct, setNewProduct] = useState<Omit<Product, "id">>({ name: "", category: "", price: 0, stock: 0 });
     const [editProductId, setEditProductId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
 
-    // افزودن محصول جدید
-    const handleAddProduct = () => {
-        if (newProduct.name && newProduct.category && newProduct.price > 0 && newProduct.stock >= 0) {
-            const product = { id: products.length + 1, ...newProduct };
-            setProducts([...products, product]);
-            setNewProduct({ name: "", category: "", price: 0, stock: 0 });
-        } else {
-            alert("لطفاً تمام فیلدها را به درستی پر کنید.");
+    const token = localStorage.getItem("accessToken");
+
+    const fetchProducts = async () => {
+        try {
+            const response = await fetch("http://localhost:8000/api/products/", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    setProducts(data);
+                } else {
+                    console.error("خطا: داده دریافتی آرایه نیست", data);
+                    setProducts([]); // یا نمایش پیغام خطا
+                }
+            } else {
+                console.error("خطا در واکشی محصولات:", response.status);
+                setProducts([]);
+            }
+        } catch (err) {
+            console.error("خطا در ارتباط با سرور:", err);
+            setProducts([]);
         }
     };
 
-    // ویرایش محصول
+
+    useEffect(() => {
+        fetchProducts();
+    }, []);
+
+    const handleAddProduct = async () => {
+        const response = await fetch("http://localhost:8000/api/products/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(newProduct),
+        });
+        if (response.ok) {
+            const product: Product = await response.json();
+            setProducts([...products, product]);
+            setNewProduct({ name: "", category: "", price: 0, stock: 0 });
+        } else {
+            alert("افزودن محصول با مشکل مواجه شد.");
+        }
+    };
+
+    const handleDeleteProduct = async (id: number) => {
+        const response = await fetch(`http://localhost:8000/api/products/${id}/`, {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        if (response.ok) {
+            setProducts(products.filter((p) => p.id !== id));
+        } else {
+            alert("حذف محصول ناموفق بود.");
+        }
+    };
+
     const handleEditProduct = (id: number) => {
         const product = products.find((p) => p.id === id);
         if (product) {
@@ -33,26 +89,27 @@ const ProductManagement: React.FC = () => {
         }
     };
 
-    // ذخیره تغییرات ویرایش
-    const handleSaveEdit = () => {
-        if (editProductId) {
-            const updatedProducts = products.map((p) =>
-                p.id === editProductId ? { ...p, ...newProduct } : p
-            );
-            setProducts(updatedProducts);
+    const handleSaveEdit = async () => {
+        if (!editProductId) return;
+        const response = await fetch(`http://localhost:8000/api/products/${editProductId}/`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(newProduct),
+        });
+        if (response.ok) {
+            const updated: Product = await response.json();
+            setProducts(products.map(p => p.id === editProductId ? updated : p));
             setEditProductId(null);
             setNewProduct({ name: "", category: "", price: 0, stock: 0 });
+        } else {
+            alert("ویرایش محصول با خطا مواجه شد.");
         }
     };
 
-    // حذف محصول
-    const handleDeleteProduct = (id: number) => {
-        const updatedProducts = products.filter((p) => p.id !== id);
-        setProducts(updatedProducts);
-    };
-
-    // فیلتر کردن محصولات بر اساس جستجو
-    const filteredProducts = products.filter((product) =>
+    const filteredProducts = products.filter(product =>
         product.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 

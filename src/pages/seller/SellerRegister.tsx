@@ -1,3 +1,4 @@
+// SellerRegister.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -15,11 +16,41 @@ const SellerRegister: React.FC = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // در اینجا اطلاعات فروشنده به سرور ارسال می‌شود
-        localStorage.setItem("isSeller", "true");
-        navigate("/seller-login");
+        try {
+            const token = localStorage.getItem("accessToken");
+            const response = await fetch("http://localhost:8000/api/sellers/register/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    shop_name: formData.shopName,
+                    phone: formData.phone,
+                    address: formData.address,
+                    description: formData.description
+                })
+            });
+            if (response.ok) {
+                localStorage.setItem("isSeller", "true");
+                navigate("/seller-login");
+            } else {
+                const data = await response.json();
+                if (data.code === "token_not_valid") {
+                    alert("توکن منقضی شده است. لطفاً دوباره وارد شوید.");
+                    localStorage.removeItem("accessToken");
+                    navigate("/login");
+                } else {
+                    alert("ثبت‌نام فروشنده با خطا مواجه شد.");
+                    console.log(data);
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            alert("خطا در اتصال به سرور.");
+        }
     };
 
     return (
