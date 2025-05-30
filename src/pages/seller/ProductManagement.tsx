@@ -136,13 +136,53 @@ const ProductManagement: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
+    const [loading, setLoading] = useState<boolean>(false);
+
     const token = localStorage.getItem("accessToken");
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    const refreshAccessToken = async () => {
+        if (!refreshToken) {
+            console.error("توکن refresh یافت نشد.");
+            return null;
+        }
+
+        const response = await fetch("http://localhost:8000/api/token/refresh/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ refresh: refreshToken }),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const newAccessToken = data.access_token;
+            localStorage.setItem("accessToken", newAccessToken);
+            return newAccessToken;
+        } else {
+            console.error("خطا در تمدید توکن.");
+            return null;
+        }
+    };
 
     const fetchProducts = async () => {
+        setLoading(true);
         try {
+            let currentToken = token;
+
+            if (!currentToken) {
+                currentToken = await refreshAccessToken();
+            }
+
+            if (!currentToken) {
+                console.error("توکن معتبر یافت نشد.");
+                return;
+            }
+
             const response = await fetch("http://localhost:8000/api/products/", {
                 headers: {
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${currentToken}`,
                 },
             });
             if (response.ok) {
@@ -154,12 +194,15 @@ const ProductManagement: React.FC = () => {
                     setProducts([]);
                 }
             } else {
-                console.error("خطا در واکشی محصولات:", response.status);
+                const error = await response.json();
+                console.error(`خطا در واکشی محصولات: ${error.detail || response.statusText}`);
                 setProducts([]);
             }
         } catch (err) {
             console.error("خطا در ارتباط با سرور:", err);
             setProducts([]);
+        } finally {
+            setLoading(false); 
         }
     };
 
@@ -174,11 +217,27 @@ const ProductManagement: React.FC = () => {
             subcategory: newProduct.subcategory.trim()
         };
 
+        if (!cleanedProduct.name || !cleanedProduct.category || !cleanedProduct.subcategory || cleanedProduct.price <= 0 || cleanedProduct.stock <= 0) {
+            alert("لطفاً تمام فیلدها را به درستی پر کنید.");
+            return;
+        }
+
+        let currentToken = token;
+
+        if (!currentToken) {
+            currentToken = await refreshAccessToken();
+        }
+
+        if (!currentToken) {
+            alert("توکن معتبر یافت نشد.");
+            return;
+        }
+
         const response = await fetch("http://localhost:8000/api/products/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
+                Authorization: `Bearer ${currentToken}`,
             },
             body: JSON.stringify(cleanedProduct),
         });
@@ -189,7 +248,8 @@ const ProductManagement: React.FC = () => {
             setNewProduct({ name: "", category: "", subcategory: "", price: 0, stock: 0 });
             setSelectedCategory(null);
         } else {
-            alert("افزودن محصول با مشکل مواجه شد.");
+            const error = await response.json();
+            alert(`افزودن محصول با مشکل مواجه شد: ${error.detail || "خطای نامشخص"}`);
         }
     };
 
@@ -228,14 +288,27 @@ const ProductManagement: React.FC = () => {
 
     const handleSaveEdit = async () => {
         if (!editProductId) return;
+
+        const cleanedProduct = {
+            ...newProduct,
+            category: newProduct.category.trim(),
+            subcategory: newProduct.subcategory.trim()
+        };
+
+        if (!cleanedProduct.name || !cleanedProduct.category || !cleanedProduct.subcategory || cleanedProduct.price <= 0 || cleanedProduct.stock <= 0) {
+            alert("لطفاً تمام فیلدها را به درستی پر کنید.");
+            return;
+        }
+
         const response = await fetch(`http://localhost:8000/api/products/${editProductId}/`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(newProduct),
+            body: JSON.stringify(cleanedProduct),
         });
+
         if (response.ok) {
             const updated: Product = await response.json();
             setProducts(products.map(p => p.id === editProductId ? updated : p));
@@ -243,7 +316,8 @@ const ProductManagement: React.FC = () => {
             setNewProduct({ name: "", category: "", subcategory: "", price: 0, stock: 0 });
             setSelectedCategory(null);
         } else {
-            alert("ویرایش محصول با خطا مواجه شد.");
+            const error = await response.json();
+            alert(`ویرایش محصول با مشکل مواجه شد: ${error.detail || "خطای نامشخص"}`);
         }
     };
 
@@ -268,6 +342,12 @@ const ProductManagement: React.FC = () => {
 
     const filteredProducts = products.filter(product =>
         product.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const Loader = () => (
+        <div className="flex justify-center items-center py-6">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#FDC500]"></div>
+        </div>
     );
 
     return (
@@ -379,46 +459,50 @@ const ProductManagement: React.FC = () => {
 
             {/* لیست محصولات */}
             <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#FDC500]">
-                <h2 className="text-lg font-semibold text-[#00509D] mb-4">لیست محصولات</h2>
+              <h2 className="text-lg font-semibold text-[#00509D] mb-4">لیست محصولات</h2>
+              {loading ? (
+                <Loader /> 
+              ) : (
                 <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white">
-                        <thead>
-                        <tr>
-                            <th className="py-3 px-4 border-b text-[#00509D]">نام محصول</th>
-                            <th className="py-3 px-4 border-b text-[#00509D]">دسته‌بندی</th>
-                            <th className="py-3 px-4 border-b text-[#00509D]">زیرمجموعه</th>
-                            <th className="py-3 px-4 border-b text-[#00509D]">قیمت</th>
-                            <th className="py-3 px-4 border-b text-[#00509D]">موجودی</th>
-                            <th className="py-3 px-4 border-b text-[#00509D]">عملیات</th>
+                  <table className="min-w-full bg-white">
+                    <thead>
+                      <tr>
+                        <th className="py-3 px-4 border-b text-[#00509D] text-center">نام محصول</th>
+                        <th className="py-3 px-4 border-b text-[#00509D] text-center">دسته‌بندی</th>
+                        <th className="py-3 px-4 border-b text-[#00509D] text-center">زیرمجموعه</th>
+                        <th className="py-3 px-4 border-b text-[#00509D] text-center">قیمت</th>
+                        <th className="py-3 px-4 border-b text-[#00509D] text-center">موجودی</th>
+                        <th className="py-3 px-4 border-b text-[#00509D] text-center">عملیات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredProducts.map((product) => (
+                        <tr key={product.id}>
+                          <td className="py-3 px-4 border-b text-[#000000] text-center">{product.name}</td>
+                          <td className="py-3 px-4 border-b text-[#000000] text-center">{product.category}</td>
+                          <td className="py-3 px-4 border-b text-[#000000] text-center">{product.subcategory}</td>
+                          <td className="py-3 px-4 border-b text-[#000000] text-center">{product.price.toLocaleString()} تومان</td>
+                          <td className="py-3 px-4 border-b text-[#000000] text-center">{product.stock}</td>
+                          <td className="py-3 px-4 border-b text-center">
+                            <button
+                              onClick={() => handleEditProduct(product.id)}
+                              className="bg-[#FDC500] hover:bg-[#DAA900] text-[#00296B] px-3 py-1 rounded ml-2 transition duration-300"
+                            >
+                              ویرایش
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(product.id)}
+                              className="bg-[#D62828] hover:bg-[#B21F1F] text-white px-3 py-1 rounded transition duration-300"
+                            >
+                              حذف
+                            </button>
+                          </td>
                         </tr>
-                        </thead>
-                        <tbody>
-                        {filteredProducts.map((product) => (
-                            <tr key={product.id}>
-                                <td className="py-3 px-4 border-b text-[#000000]">{product.name}</td>
-                                <td className="py-3 px-4 border-b text-[#000000]">{product.category}</td>
-                                <td className="py-3 px-4 border-b text-[#000000]">{product.subcategory}</td>
-                                <td className="py-3 px-4 border-b text-[#000000]">{product.price.toLocaleString()} تومان</td>
-                                <td className="py-3 px-4 border-b text-[#000000]">{product.stock}</td>
-                                <td className="py-3 px-4 border-b">
-                                    <button
-                                        onClick={() => handleEditProduct(product.id)}
-                                        className="bg-[#FDC500] hover:bg-[#DAA900] text-[#00296B] px-3 py-1 rounded ml-2 transition duration-300"
-                                    >
-                                        ویرایش
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteProduct(product.id)}
-                                        className="bg-[#D62828] hover:bg-[#B21F1F] text-white px-3 py-1 rounded transition duration-300"
-                                    >
-                                        حذف
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+              )}
             </div>
         </div>
     );
