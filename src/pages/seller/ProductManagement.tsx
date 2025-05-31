@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { categories } from "../categoriesData";
 
 interface Subcategory {
@@ -21,8 +21,6 @@ interface Product {
     stock: number;
 }
 
-
-
 const ProductManagement: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [newProduct, setNewProduct] = useState<Omit<Product, "id">>({
@@ -35,11 +33,20 @@ const ProductManagement: React.FC = () => {
     const [editProductId, setEditProductId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-
     const [loading, setLoading] = useState<boolean>(false);
+    const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+    const [productToDelete, setProductToDelete] = useState<number | null>(null);
 
     const token = localStorage.getItem("accessToken");
     const refreshToken = localStorage.getItem("refreshToken");
+
+    const topRef = useRef<HTMLDivElement | null>(null);
+
+    const handleScrollToTop = () => {
+        if (topRef.current) {
+            topRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
 
     const refreshAccessToken = async () => {
         if (!refreshToken) {
@@ -162,6 +169,7 @@ const ProductManagement: React.FC = () => {
         });
         if (response.ok) {
             setProducts(products.filter((p) => p.id !== id));
+            setShowDeleteModal(false); // بستن مودال پس از حذف
         } else {
             alert("حذف محصول ناموفق بود.");
         }
@@ -253,7 +261,7 @@ const ProductManagement: React.FC = () => {
     return (
         <div className="bg-[#F5F5F5] p-6 rounded-lg min-h-screen" style={{ direction: 'rtl' }}>
             {/* عنوان با خط کامل در زیر */}
-            <div className="mb-8">
+            <div className="mb-8" ref={topRef}>
                 <h2 className="text-4xl font-bold text-[#00296B] text-center pb-3 relative">
                     مدیریت محصولات
                     <span className="absolute bottom-0 right-0 left-0 h-1.5 bg-[#FDC500] rounded-full mx-auto w-full max-w-2xl"></span>
@@ -384,18 +392,27 @@ const ProductManagement: React.FC = () => {
                           <td className="py-3 px-4 border-b text-[#000000] text-center">{product.price.toLocaleString()} تومان</td>
                           <td className="py-3 px-4 border-b text-[#000000] text-center">{product.stock}</td>
                           <td className="py-3 px-4 border-b text-center">
-                            <button
-                              onClick={() => handleEditProduct(product.id)}
-                              className="bg-[#FDC500] hover:bg-[#DAA900] text-[#00296B] px-3 py-1 rounded ml-2 transition duration-300"
-                            >
-                              ویرایش
-                            </button>
-                            <button
-                              onClick={() => handleDeleteProduct(product.id)}
-                              className="bg-[#D62828] hover:bg-[#B21F1F] text-white px-3 py-1 rounded transition duration-300"
-                            >
-                              حذف
-                            </button>
+                            <div>
+                              <button
+                                onClick={() => {
+                                  handleEditProduct(product.id);
+                                  handleScrollToTop(); // اسکرول به تگ مدیریت محصولات
+                                }}
+                                className="bg-[#FDC500] hover:bg-[#DAA900] text-[#00296B] px-3 py-1 rounded ml-2 transition duration-300"
+                              >
+                                ویرایش
+                              </button>
+                            
+                              <button
+                                onClick={() => {
+                                  setShowDeleteModal(true);
+                                  setProductToDelete(product.id);
+                                }}
+                                className="bg-[#D62828] hover:bg-[#B21F1F] text-white px-3 py-1 rounded transition duration-300"
+                              >
+                                حذف
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -404,6 +421,33 @@ const ProductManagement: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex justify-center items-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 className="text-lg font-semibold mb-4">آیا مطمئن هستید؟</h3>
+                        <p>این محصول حذف خواهد شد.</p>
+                        <div className="mt-4 flex justify-between">
+                            <button
+                                onClick={() => {
+                                    if (productToDelete) {
+                                        handleDeleteProduct(productToDelete);
+                                    }
+                                }}
+                                className="bg-[#D62828]  text-white px-6 py-2 rounded"
+                            >
+                                حذف
+                            </button>
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="ml-4 bg-[#00509D] text-white px-8 py-2 rounded"
+                            >
+                                لغو
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
