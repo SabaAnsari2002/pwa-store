@@ -10,17 +10,61 @@ const Register: React.FC = () => {
     phone: ""
   });
 
+  const [errors, setErrors] = useState({
+    username: "",
+    password: "",
+    email: "",
+    phone: ""
+  });
+
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: "" })); // Reset error for the changed field
+  };
+
+  const validateForm = () => {
+    let formValid = true;
+    let validationErrors = { username: "", password: "", email: "", phone: "" };
+
+    if (!formData.username.trim()) {
+      validationErrors.username = "نام کاربری ضروری است.";
+      formValid = false;
+    } else if (formData.username.length < 2) {
+      validationErrors.username = "نام کاربری باید حداقل 2 کاراکتر باشد.";
+      formValid = false;
+    }
+
+    if (formData.password.length < 6) {
+      validationErrors.password = "رمز عبور باید حداقل 6 کاراکتر باشد.";
+      formValid = false;
+    }
+
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    if (!emailPattern.test(formData.email)) {
+      validationErrors.email = "آدرس ایمیل باید با @gmail.com تمام شود.";
+      formValid = false;
+    }
+
+    const phonePattern = /^09[0-9]{9}$/;
+    if (!phonePattern.test(formData.phone)) {
+      validationErrors.phone = "شماره تلفن باید 11 رقم باشد و با 09 شروع شود.";
+      formValid = false;
+    }
+
+    setErrors(validationErrors);
+    return formValid;
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
+    if (!validateForm()) {
+      return; // Prevent form submission if validation fails
+    }
 
+    try {
       const response = await fetch("http://localhost:8000/api/users/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -38,7 +82,6 @@ const Register: React.FC = () => {
       alert("خطا در اتصال به سرور.");
     }
   };
-
 
   return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#00509D] to-[#00296B] p-4">
@@ -62,6 +105,7 @@ const Register: React.FC = () => {
                     className="w-full pr-10 pl-4 py-3 border-b-2 border-[#E5E5E5] focus:border-[#00509D] focus:outline-none bg-transparent transition-all"
                     required
                 />
+                {errors.username && <p className="text-red-500 text-sm">{errors.username}</p>}
               </div>
 
               <div className="relative">
@@ -77,6 +121,7 @@ const Register: React.FC = () => {
                     className="w-full pr-10 pl-4 py-3 border-b-2 border-[#E5E5E5] focus:border-[#00509D] focus:outline-none bg-transparent transition-all"
                     required
                 />
+                {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
               </div>
 
               <div className="relative">
@@ -92,6 +137,7 @@ const Register: React.FC = () => {
                     className="w-full pr-10 pl-4 py-3 border-b-2 border-[#E5E5E5] focus:border-[#00509D] focus:outline-none bg-transparent transition-all"
                     required
                 />
+                {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
               </div>
 
               <div className="relative">
@@ -106,6 +152,7 @@ const Register: React.FC = () => {
                     onChange={handleChange}
                     className="w-full pr-10 pl-4 py-3 border-b-2 border-[#E5E5E5] focus:border-[#00509D] focus:outline-none bg-transparent transition-all"
                 />
+                {errors.phone && <p className="text-red-500 text-sm">{errors.phone}</p>}
               </div>
 
               <button
