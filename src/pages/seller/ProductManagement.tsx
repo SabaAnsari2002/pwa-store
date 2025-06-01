@@ -134,6 +134,12 @@ const ProductManagement: React.FC = () => {
         }
     };
 
+    const handleCancelEdit = () => {
+        setEditProductId(null);
+        setNewProduct({ name: "", category: "", subcategory: "", price: 0, stock: 0 });
+        setSelectedCategory(null);
+    };
+
     const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const categoryName = e.target.value;
         const category = categories.find(cat => cat.name === categoryName) || null;
@@ -159,7 +165,6 @@ const ProductManagement: React.FC = () => {
 
     return (
         <div className="bg-[#F5F5F5] p-6 rounded-lg min-h-screen" style={{ direction: 'rtl' }}>
-            {/* عنوان با خط کامل در زیر */}
             <div className="mb-8">
                 <h2 className="text-4xl font-bold text-[#00296B] text-center pb-3 relative">
                     مدیریت محصولات
@@ -244,12 +249,26 @@ const ProductManagement: React.FC = () => {
                         />
                     </div>
                 </div>
-                <button
-                    onClick={editProductId ? handleSaveEdit : handleAddProduct}
-                    className="mt-4 bg-[#00509D] hover:bg-[#003F7D] text-white px-6 py-2 rounded transition duration-300"
-                >
-                    {editProductId ? "ذخیره تغییرات" : "افزودن محصول"}
-                </button>
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+                    <button
+                        onClick={editProductId ? handleSaveEdit : handleAddProduct}
+                        className="bg-[#00509D] hover:bg-[#003F7D] text-white px-8 py-3 rounded-lg transition duration-300 w-full md:w-auto"
+                    >
+                        {editProductId ? "ذخیره تغییرات" : "افزودن محصول"}
+                    </button>
+
+                    {/* Cancel Edit Button */}
+                    {editProductId && (
+                        <button
+                            onClick={handleCancelEdit}
+                            className="bg-[#D62828] hover:bg-[#B21F1F] text-white px-8 py-3 rounded-lg transition duration-300 w-full md:w-auto"
+                        >
+                            انصراف از ویرایش
+                        </button>
+                    )}
+                </div>
+
+
             </div>
 
             {/* جستجوی محصولات */}
