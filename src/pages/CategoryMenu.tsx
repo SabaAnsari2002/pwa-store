@@ -1,27 +1,5 @@
 import React, { useState, useRef } from "react";
-
-const categories = [
-    {
-        name: "کالای دیجیتال",
-        subcategories: ["موبایل", "لپ‌تاپ", "تبلت", "لوازم جانبی"],
-    },
-    {
-        name: "پوشاک",
-        subcategories: ["مردانه", "زنانه", "کودک", "اکسسوری"],
-    },
-    {
-        name: "آرایشی و بهداشتی",
-        subcategories: ["لوازم آرایشی", "مراقبت پوست", "مراقبت مو"],
-    },
-    {
-        name: "خانه و آشپزخانه",
-        subcategories: ["لوازم آشپزخانه", "دکوراسیون", "کالای خواب"],
-    },
-    {
-        name: "کتاب و لوازم تحریر",
-        subcategories: ["کتاب", "دفتر و کاغذ", "نوشت‌افزار"],
-    },
-];
+import { categories } from "../data/categories";
 
 const CategoryMenu: React.FC = () => {
     const [showMenu, setShowMenu] = useState(false);
@@ -60,7 +38,7 @@ const CategoryMenu: React.FC = () => {
                                         key={i}
                                         className="hover:text-[#FDC500] transition-colors cursor-pointer pr-2"
                                     >
-                                        {sub}
+                                        {sub.name}
                                     </li>
                                 ))}
                             </ul>
