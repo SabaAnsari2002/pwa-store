@@ -169,7 +169,7 @@ const ProductManagement: React.FC = () => {
         });
         if (response.ok) {
             setProducts(products.filter((p) => p.id !== id));
-            setShowDeleteModal(false); // بستن مودال پس از حذف
+            setShowDeleteModal(false);
         } else {
             alert("حذف محصول ناموفق بود.");
         }
@@ -186,7 +186,6 @@ const ProductManagement: React.FC = () => {
                 stock: product.stock
             });
 
-            // پیدا کردن دسته‌بندی انتخاب شده برای نمایش زیرمجموعه‌های آن
             const category = categories.find(cat => cat.name === product.category);
             setSelectedCategory(category || null);
 
@@ -229,6 +228,12 @@ const ProductManagement: React.FC = () => {
         }
     };
 
+    const handleCancelEdit = () => {
+        setEditProductId(null);
+        setNewProduct({ name: "", category: "", subcategory: "", price: 0, stock: 0 });
+        setSelectedCategory(null);
+    };
+
     const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const categoryName = e.target.value;
         const category = categories.find(cat => cat.name === categoryName) || null;
@@ -260,7 +265,6 @@ const ProductManagement: React.FC = () => {
 
     return (
         <div className="bg-[#F5F5F5] p-6 rounded-lg min-h-screen" style={{ direction: 'rtl' }}>
-            {/* عنوان با خط کامل در زیر */}
             <div className="mb-8" ref={topRef}>
                 <h2 className="text-4xl font-bold text-[#00296B] text-center pb-3 relative">
                     مدیریت محصولات
@@ -268,7 +272,6 @@ const ProductManagement: React.FC = () => {
                 </h2>
             </div>
 
-            {/* فرم افزودن/ویرایش محصول */}
             <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#FDC500] mb-8">
                 <h2 className="text-lg font-semibold text-[#00509D] mb-4">
                     {editProductId ? "ویرایش محصول" : "افزودن محصول جدید"}
@@ -345,15 +348,27 @@ const ProductManagement: React.FC = () => {
                         />
                     </div>
                 </div>
-                <button
-                    onClick={editProductId ? handleSaveEdit : handleAddProduct}
-                    className="mt-4 bg-[#00509D] hover:bg-[#003F7D] text-white px-6 py-2 rounded transition duration-300"
-                >
-                    {editProductId ? "ذخیره تغییرات" : "افزودن محصول"}
-                </button>
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+                    <button
+                        onClick={editProductId ? handleSaveEdit : handleAddProduct}
+                        className="bg-[#00509D] hover:bg-[#003F7D] text-white px-8 py-3 rounded-lg transition duration-300 w-full md:w-auto"
+                    >
+                        {editProductId ? "ذخیره تغییرات" : "افزودن محصول"}
+                    </button>
+
+                    {editProductId && (
+                        <button
+                            onClick={handleCancelEdit}
+                            className="bg-[#D62828] hover:bg-[#B21F1F] text-white px-8 py-3 rounded-lg transition duration-300 w-full md:w-auto"
+                        >
+                            انصراف از ویرایش
+                        </button>
+                    )}
+                </div>
+
+
             </div>
 
-            {/* جستجوی محصولات */}
             <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#FDC500] mb-8">
                 <h2 className="text-lg font-semibold text-[#00509D] mb-4">جستجوی محصولات</h2>
                 <input
@@ -365,7 +380,6 @@ const ProductManagement: React.FC = () => {
                 />
             </div>
 
-            {/* لیست محصولات */}
             <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#FDC500]">
               <h2 className="text-lg font-semibold text-[#00509D] mb-4">لیست محصولات</h2>
               {loading ? (
@@ -396,7 +410,7 @@ const ProductManagement: React.FC = () => {
                               <button
                                 onClick={() => {
                                   handleEditProduct(product.id);
-                                  handleScrollToTop(); // اسکرول به تگ مدیریت محصولات
+                                  handleScrollToTop();
                                 }}
                                 className="bg-[#FDC500] hover:bg-[#DAA900] text-[#00296B] px-3 py-1 rounded ml-2 transition duration-300"
                               >

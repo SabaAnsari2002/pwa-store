@@ -1,28 +1,52 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { categories } from "./categoriesData";
-import { mockProducts } from "./productsData";
-
-
-
+import { categories, Category, Subcategory } from "../data/categories";
+import { Product, mockProducts } from "../data/products";
+import { getProductsBySubcategory } from "../api/products";
+import IMG from "../assets/img.jpg";
 
 
 const SubCategoryProducts: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000000]);
     const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
     const [expandedCategories, setExpandedCategories] = useState<number[]>([]);
     const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
 
-    const currentSubcategory = id || "";
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                setLoading(true);
+                if (id) {
+                    const decodedName = decodeURIComponent(id);
+                    const data = await getProductsBySubcategory(decodedName);
+                    setProducts(data);
+                }
+            } catch (error) {
+                console.error("Error fetching products:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const brands = Array.from(new Set(
-        mockProducts
-            .filter(p => p.subcategory === currentSubcategory)
-            .map(p => p.brand)
-    ));
+        if (id) {
+            fetchProducts();
+        }
+    }, [id]);
+
+    const currentSubcategory = id ? decodeURIComponent(id) : "";
+
+    const brands = Array.from(
+        new Set(
+            mockProducts
+                .filter(p => p.subcategory === currentSubcategory)
+                .map(p => p.brand || "")
+                .filter(brand => brand !== "")
+        )
+    );
 
     const toggleCategory = (categoryId: number) => {
         setExpandedCategories(prev =>
@@ -51,10 +75,10 @@ const SubCategoryProducts: React.FC = () => {
         return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     };
 
-    const filteredProducts = mockProducts.filter(product => {
+    const filteredProducts = products.filter(product => {
         if (product.subcategory !== currentSubcategory) return false;
         if (product.price < priceRange[0] || product.price > priceRange[1]) return false;
-        if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) return false;
+        if (selectedBrands.length > 0 && product.brand && !selectedBrands.includes(product.brand)) return false;
         return true;
     });
 
@@ -66,7 +90,6 @@ const SubCategoryProducts: React.FC = () => {
 
                 {/* Categories List */}
                 <div className="space-y-2">
-                    {/* دکمه اصلی برای باز/بسته کردن آکاردئون */}
                     <button
                         className="flex justify-between items-center cursor-pointer p-2 bg-[#00509D] hover:bg-[#003F7D] rounded-lg w-full"
                         onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
@@ -75,7 +98,6 @@ const SubCategoryProducts: React.FC = () => {
                         <span>{isCategoriesOpen ? '−' : '+'}</span>
                     </button>
 
-                    {/* محتوای آکاردئون */}
                     {isCategoriesOpen && (
                         <div className="mt-2 space-y-2">
                             {categories.map(category => (
@@ -86,8 +108,8 @@ const SubCategoryProducts: React.FC = () => {
                                     >
                                         <span>{category.name}</span>
                                         <span>
-                            {expandedCategories.includes(category.id) ? '−' : '+'}
-                        </span>
+                                            {expandedCategories.includes(category.id) ? '−' : '+'}
+                                        </span>
                                     </div>
 
                                     {expandedCategories.includes(category.id) && (
@@ -96,7 +118,7 @@ const SubCategoryProducts: React.FC = () => {
                                                 <div
                                                     key={sub.id}
                                                     className={`p-2 rounded-lg cursor-pointer ${currentSubcategory === sub.name ? 'bg-[#FDC500] text-black' : 'hover:bg-[#003F7D]'}`}
-                                                    onClick={() => navigate(`/subcategory-products/${sub.name}`)}
+                                                    onClick={() => navigate(`/subcategory-products/${encodeURIComponent(sub.name)}`)}
                                                 >
                                                     {sub.name}
                                                 </div>
@@ -109,7 +131,6 @@ const SubCategoryProducts: React.FC = () => {
                     )}
                 </div>
 
-                {/* Price Range Filter */}
                 <div className="mt-6 mb-6">
                     <h3 className="font-semibold mb-3 text-[#FDC500]">محدوده قیمت</h3>
                     <div className="px-2">
@@ -138,28 +159,28 @@ const SubCategoryProducts: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Brand Filter */}
-                <div className="mb-6">
-                    <h3 className="font-semibold mb-3 text-[#FDC500]">برندها</h3>
-                    <div className="space-y-2">
-                        {brands.map(brand => (
-                            <div key={brand} className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    id={`brand-${brand}`}
-                                    checked={selectedBrands.includes(brand)}
-                                    onChange={() => handleBrandToggle(brand)}
-                                    className="ml-2 h-4 w-4 accent-[#FDC500]"
-                                />
-                                <label htmlFor={`brand-${brand}`} className="cursor-pointer">
-                                    {brand}
-                                </label>
-                            </div>
-                        ))}
+                {brands.length > 0 && (
+                    <div className="mb-6">
+                        <h3 className="font-semibold mb-3 text-[#FDC500]">برندها</h3>
+                        <div className="space-y-2">
+                            {brands.map(brand => (
+                                <div key={brand} className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        id={`brand-${brand}`}
+                                        checked={selectedBrands.includes(brand)}
+                                        onChange={() => handleBrandToggle(brand)}
+                                        className="ml-2 h-4 w-4 accent-[#FDC500]"
+                                    />
+                                    <label htmlFor={`brand-${brand}`} className="cursor-pointer">
+                                        {brand}
+                                    </label>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
 
-                {/* Reset Filters Button */}
                 <button
                     onClick={() => {
                         setPriceRange([0, 50000000]);
@@ -171,109 +192,83 @@ const SubCategoryProducts: React.FC = () => {
                 </button>
             </aside>
 
-            {/* Main Content */}
             <main className="w-3/4 p-6">
                 <h1 className="text-2xl font-bold text-[#00509D] mb-6">
                     محصولات دسته‌بندی: {currentSubcategory}
                 </h1>
 
-                {/* Sorting Options */}
-                <div className="flex justify-between items-center mb-6 bg-white p-3 rounded-lg shadow">
-                    <div className="text-sm text-gray-600">
-                        {filteredProducts.length} محصول یافت شد
-                    </div>
-                    <div className="flex items-center">
-                        <label htmlFor="sort" className="ml-2 text-[#00509D]">مرتب‌سازی بر اساس:</label>
-                        <select
-                            id="sort"
-                            className="bg-[#E5E5E5] border border-[#00509D] text-[#00509D] rounded px-3 py-1"
-                        >
-                            <option value="popular">پربازدیدترین</option>
-                            <option value="newest">جدیدترین</option>
-                            <option value="cheapest">ارزان‌ترین</option>
-                            <option value="expensive">گران‌ترین</option>
-                            <option value="top-rated">پربازدیدترین</option>
-                        </select>
-                    </div>
-                </div>
-
-                {/* Products Grid */}
-                {filteredProducts.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredProducts.map(product => (
-                            <div
-                                key={product.id}
-                                className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                                onClick={() => navigate(`/product/${product.id}`)}
-                            >
-                                <div className="h-48 bg-gray-200 flex items-center justify-center">
-                                    <img
-                                        src={product.image}
-                                        alt={product.name}
-                                        className="h-full object-cover"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x300?text=Product+Image";
-                                        }}
-                                    />
-                                </div>
-                                <div className="p-4">
-                                    <h3 className="font-semibold text-lg text-[#00509D] mb-2">{product.name}</h3>
-                                    <div className="flex items-center mb-2">
-                                        {[...Array(5)].map((_, i) => (
-                                            <svg
-                                                key={i}
-                                                className={`w-4 h-4 ${i < Math.floor(product.rating) ? "text-[#FDC500]" : "text-gray-300"}`}
-                                                fill="currentColor"
-                                                viewBox="0 0 20 20"
-                                            >
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                            </svg>
-                                        ))}
-                                        <span className="text-sm text-gray-600 mr-1">({product.rating})</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="font-bold text-lg text-[#00296B]">{formatPrice(product.price)} تومان</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                {loading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#00509D]"></div>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-lg shadow p-8 text-center">
-                        <h3 className="text-lg font-medium text-[#00509D] mb-2">محصولی یافت نشد</h3>
-                        <p className="text-gray-600 mb-4">با تغییر فیلترها دوباره امتحان کنید</p>
-                        <button
-                            onClick={() => {
-                                setPriceRange([0, 50000000]);
-                                setSelectedBrands([]);
-                            }}
-                            className="bg-[#00509D] hover:bg-[#003F7D] text-white px-4 py-2 rounded font-medium transition-colors"
-                        >
-                            حذف همه فیلترها
-                        </button>
-                    </div>
-                )}
+                    <>
+                        <div className="flex justify-between items-center mb-6 bg-white p-3 rounded-lg shadow">
+                            <div className="text-sm text-gray-600">
+                                {filteredProducts.length} محصول یافت شد
+                            </div>
+                        </div>
 
-                {/* Pagination */}
-                {filteredProducts.length > 0 && (
-                    <div className="flex justify-center mt-8">
-                        <nav className="inline-flex rounded-md shadow">
-                            <button className="px-3 py-1 rounded-r-md bg-[#00509D] text-white font-medium hover:bg-[#003F7D]">
-                                قبلی
-                            </button>
-                            {[1, 2, 3, 4, 5].map(page => (
+                        {filteredProducts.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredProducts.map(product => (
+                                    <div
+                                        key={product.id}
+                                        className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                                        onClick={() => navigate(`/product/${product.id}`)}
+                                    >
+                                        <div className="max-w-sm rounded-lg overflow-hidden shadow-lg bg-white transition-transform duration-300 hover:shadow-xl hover:-translate-y-1">
+                                          <div className="h-48 bg-gray-100 flex items-center justify-center relative">
+                                            <img
+                                              src={IMG}
+                                              className="h-full w-full object-cover"
+                                            />
+                                            <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-bold ${product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                              {product.stock > 0 ? `${product.stock} عدد موجود` : 'ناموجود'}
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="p-5">
+                                            <h3 className="font-bold text-xl text-gray-800 mb-2 truncate">{product.name}</h3>
+                                          
+                                            <div className="flex justify-between items-center mt-4">
+                                              <div>
+                                                <span className="text-sm text-gray-500 block">قیمت:</span>
+                                                <span className="font-bold text-lg text-blue-900">{formatPrice(product.price)} تومان</span>
+                                              </div>
+
+                                              <div className="text-right">
+                                                <span className={`font-semibold ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                  {product.stock > 0 ? 'موجود' : 'تمام شد'}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          
+                                            {/* دکمه اضافه به سبد خرید */}
+                                            <button className="mt-4 w-full bg-[#00509D] text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                                              افزودن به سبد خرید
+                                            </button>
+                                          </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white rounded-lg shadow p-8 text-center">
+                                <h3 className="text-lg font-medium text-[#00509D] mb-2">محصولی یافت نشد</h3>
+                                <p className="text-gray-600 mb-4">با تغییر فیلترها دوباره امتحان کنید</p>
                                 <button
-                                    key={page}
-                                    className={`px-3 py-1 border-t border-b ${page === 1 ? "bg-[#FDC500] text-black" : "bg-white text-[#00509D]"} border-gray-300 hover:bg-gray-100 font-medium`}
+                                    onClick={() => {
+                                        setPriceRange([0, 50000000]);
+                                        setSelectedBrands([]);
+                                    }}
+                                    className="bg-[#00509D] hover:bg-[#003F7D] text-white px-4 py-2 rounded font-medium transition-colors"
                                 >
-                                    {page}
+                                    حذف همه فیلترها
                                 </button>
-                            ))}
-                            <button className="px-3 py-1 rounded-l-md bg-[#00509D] text-white font-medium hover:bg-[#003F7D]">
-                                بعدی
-                            </button>
-                        </nav>
-                    </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </main>
         </div>
