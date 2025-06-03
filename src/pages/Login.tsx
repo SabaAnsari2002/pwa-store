@@ -27,13 +27,16 @@ const Login: React.FC<LoginProps> = ({ setUser }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials)
       });
+
       const data = await response.json();
+
       if (response.ok) {
+        localStorage.setItem("access_token", data.access);
+        localStorage.setItem("refresh_token", data.refresh);
         localStorage.setItem("user", credentials.username);
-        localStorage.setItem("accessToken", data.access);
 
         setUser(credentials.username);
-        navigate("/"); // هدایت اولیه برای ثبت‌نام فروشنده
+        navigate("/");
       } else {
         alert(data.detail || "مشکلی در ورود به حساب وجود دارد.");
       }
