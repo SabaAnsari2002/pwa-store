@@ -61,7 +61,7 @@ const SellerRegister: React.FC = () => {
         }
 
         try {
-            const token = localStorage.getItem("accessToken");
+            const token = localStorage.getItem("access_token");
             const response = await fetch("http://localhost:8000/api/sellers/register/", {
                 method: "POST",
                 headers: {
