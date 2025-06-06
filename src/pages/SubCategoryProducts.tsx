@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { categories, Category, Subcategory } from "../data/categories";
-import { Product, mockProducts } from "../data/products";
+import { Product } from "../data/products";
 import { getProductsBySubcategory } from "../api/products";
 import IMG from "../assets/img.jpg";
-
+import { motion, AnimatePresence } from "framer-motion";
+import { FiFilter, FiX, FiShoppingCart, FiHeart } from "react-icons/fi";
 
 const SubCategoryProducts: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -12,7 +13,6 @@ const SubCategoryProducts: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000000]);
-    const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
     const [expandedCategories, setExpandedCategories] = useState<number[]>([]);
     const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
 
@@ -39,28 +39,11 @@ const SubCategoryProducts: React.FC = () => {
 
     const currentSubcategory = id ? decodeURIComponent(id) : "";
 
-    const brands = Array.from(
-        new Set(
-            mockProducts
-                .filter(p => p.subcategory === currentSubcategory)
-                .map(p => p.brand || "")
-                .filter(brand => brand !== "")
-        )
-    );
-
     const toggleCategory = (categoryId: number) => {
         setExpandedCategories(prev =>
             prev.includes(categoryId)
                 ? prev.filter(id => id !== categoryId)
                 : [...prev, categoryId]
-        );
-    };
-
-    const handleBrandToggle = (brand: string) => {
-        setSelectedBrands(prev =>
-            prev.includes(brand)
-                ? prev.filter(b => b !== brand)
-                : [...prev, brand]
         );
     };
 
@@ -78,17 +61,13 @@ const SubCategoryProducts: React.FC = () => {
     const filteredProducts = products.filter(product => {
         if (product.subcategory !== currentSubcategory) return false;
         if (product.price < priceRange[0] || product.price > priceRange[1]) return false;
-        if (selectedBrands.length > 0 && product.brand && !selectedBrands.includes(product.brand)) return false;
         return true;
     });
 
     return (
         <div className="flex bg-[#E5E5E5] min-h-screen" style={{ direction: "rtl" }}>
-            {/* Sidebar Filters */}
             <aside className="w-1/5 bg-[#00296B] text-white p-4 h-screen sticky top-0 overflow-y-auto">
                 <h2 className="text-xl font-bold mb-6 text-[#FDC500] border-b border-[#00509D] pb-2">دسته‌بندی‌ها</h2>
-
-                {/* Categories List */}
                 <div className="space-y-2">
                     <button
                         className="flex justify-between items-center cursor-pointer p-2 bg-[#00509D] hover:bg-[#003F7D] rounded-lg w-full"
@@ -159,36 +138,13 @@ const SubCategoryProducts: React.FC = () => {
                     </div>
                 </div>
 
-                {brands.length > 0 && (
-                    <div className="mb-6">
-                        <h3 className="font-semibold mb-3 text-[#FDC500]">برندها</h3>
-                        <div className="space-y-2">
-                            {brands.map(brand => (
-                                <div key={brand} className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id={`brand-${brand}`}
-                                        checked={selectedBrands.includes(brand)}
-                                        onChange={() => handleBrandToggle(brand)}
-                                        className="ml-2 h-4 w-4 accent-[#FDC500]"
-                                    />
-                                    <label htmlFor={`brand-${brand}`} className="cursor-pointer">
-                                        {brand}
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 <button
                     onClick={() => {
                         setPriceRange([0, 50000000]);
-                        setSelectedBrands([]);
                     }}
                     className="w-full py-2 bg-[#FDC500] text-black rounded-lg font-medium hover:bg-[#FFD700] transition-colors"
                 >
-                    حذف فیلترها
+                    حذف فیلتر
                 </button>
             </aside>
 
@@ -215,7 +171,7 @@ const SubCategoryProducts: React.FC = () => {
                                     <div
                                         key={product.id}
                                         className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                                        onClick={() => navigate(`/product/${product.id}`)}
+                                        onClick={() => navigate(`/products/${product.id}`)}
                                     >
                                         <div className="max-w-sm rounded-lg overflow-hidden shadow-lg bg-white transition-transform duration-300 hover:shadow-xl hover:-translate-y-1">
                                           <div className="h-48 bg-gray-100 flex items-center justify-center relative">
@@ -223,31 +179,12 @@ const SubCategoryProducts: React.FC = () => {
                                               src={IMG}
                                               className="h-full w-full object-cover"
                                             />
-                                            <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-bold ${product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                              {product.stock > 0 ? `${product.stock} عدد موجود` : 'ناموجود'}
-                                            </div>
                                           </div>
                                           
                                           <div className="p-5">
-                                            <h3 className="font-bold text-xl text-gray-800 mb-2 truncate">{product.name}</h3>
-                                          
-                                            <div className="flex justify-between items-center mt-4">
-                                              <div>
-                                                <span className="text-sm text-gray-500 block">قیمت:</span>
-                                                <span className="font-bold text-lg text-blue-900">{formatPrice(product.price)} تومان</span>
-                                              </div>
-
-                                              <div className="text-right">
-                                                <span className={`font-semibold ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                  {product.stock > 0 ? 'موجود' : 'تمام شد'}
-                                                </span>
-                                              </div>
+                                            <div className="flex justify-between items-center mb-2">
+                                              <h3 className="font-bold text-xl text-gray-800 truncate">{product.name}</h3>
                                             </div>
-                                          
-                                            {/* دکمه اضافه به سبد خرید */}
-                                            <button className="mt-4 w-full bg-[#00509D] text-white py-2 px-4 rounded-lg transition-colors duration-200">
-                                              افزودن به سبد خرید
-                                            </button>
                                           </div>
                                         </div>
                                     </div>
@@ -260,7 +197,6 @@ const SubCategoryProducts: React.FC = () => {
                                 <button
                                     onClick={() => {
                                         setPriceRange([0, 50000000]);
-                                        setSelectedBrands([]);
                                     }}
                                     className="bg-[#00509D] hover:bg-[#003F7D] text-white px-4 py-2 rounded font-medium transition-colors"
                                 >

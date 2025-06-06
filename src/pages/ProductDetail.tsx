@@ -1,269 +1,437 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { getProductById, getSellersByProductId } from "../api/products";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiStar, FiChevronLeft, FiShoppingCart, FiHeart, FiShare2, FiClock, FiCheckCircle } from "react-icons/fi";
+import IMG from "../assets/img.jpg";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { useCart } from "../contexts/CartContext";
 
 interface Product {
-    id: number;
-    name: string;
-    price: number;
-    brand: string;
-    category: string;
-    subcategory: string;
-    image: string;
-    rating: number;
-    description: string;
-    features: string[];
-}
-
-interface Store {
-    id: number;
-    name: string;
+  id: number;
+  name: string;
+  description: string;
+  specifications: Record<string, string>;
+  category: string;
+  subcategory: string;
+  images: string[];
+  rating: number;
+  reviewCount: number;
+  sellers: Array<{
+    seller_id: number;
+    shop_name: string;
     price: number;
     stock: number;
-    deliveryTime: string;
-    rating: number;
-    logo: string;
+    delivery_time: string;
+    logo?: string;
+    product_id: number;
+    discount?: number;
+  }>;
 }
 
-const mockProducts: Product[] = [
-    {
-        id: 1,
-        name: "یخچال ساید بای ساید سامسونگ 25 فوت",
-        price: 25000000,
-        brand: "سامسونگ",
-        category: "لوازم خانگی",
-        subcategory: "یخچال",
-        image: "https://example.com/fridge1.jpg",
-        rating: 4.5,
-        description: "یخچال ساید بای ساید سامسونگ با ظرفیت 25 فوت، دارای سیستم خنک‌کننده Twin Cooling Plus، نمایشگر دیجیتال، آبسردکن و یخساز اتوماتیک",
-        features: [
-            "ظرفیت 725 لیتر",
-            "مصرف انرژی A++",
-            "سیستم No Frost",
-            "دارای فیلتر ضد باکتری",
-            "گارانتی 2 ساله"
-        ]
-    },
-];
-
-const mockStores: Record<number, Store[]> = {
-    1: [
-        {
-            id: 1,
-            name: "دیجی‌کالا",
-            price: 24800000,
-            stock: 5,
-            deliveryTime: "2 روز کاری",
-            rating: 4.8,
-            logo: "https://example.com/digikala-logo.jpg"
-        },
-        {
-            id: 2,
-            name: "بازارگاه",
-            price: 25500000,
-            stock: 3,
-            deliveryTime: "3 روز کاری",
-            rating: 4.5,
-            logo: "https://example.com/bazargah-logo.jpg"
-        },
-        {
-            id: 3,
-            name: "مایکرو",
-            price: 24900000,
-            stock: 2,
-            deliveryTime: "1 روز کاری",
-            rating: 4.6,
-            logo: "https://example.com/microro-logo.jpg"
-        },
-    ],
-};
+interface Seller {
+  seller_id: number;
+  id: number;
+  shop_name: string;
+  phone: string;
+  address: string;
+  description: string;
+  price: number;
+  stock: number;
+  delivery_time: string;
+  rating?: number;
+  logo?: string;
+  discount?: number;
+  product_id: number;
+}
 
 const ProductDetail: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
-    const productId = parseInt(id || "0");
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [stores, setStores] = useState<Seller[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [activeTab, setActiveTab] = useState("description");
+  const [notification, setNotification] = useState<{show: boolean, message: string}>({show: false, message: ''});
 
-    const product = mockProducts.find(p => p.id === productId);
-    const stores = mockStores[productId] || [];
+  useEffect(() => {
+    const fetchProductData = async () => {
+      try {
+        setLoading(true);
+        if (id) {
+          const productData = await getProductById(parseInt(id));
+          setProduct(productData);
 
-    const formatPrice = (price: number) => {
-        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+          const sellersData = await getSellersByProductId(parseInt(id));
+          setStores(sellersData);
+        }
+      } catch (err) {
+        setError("خطا در دریافت اطلاعات محصول");
+        console.error("Error fetching product data:", err);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    if (!product) {
-        return (
-            <div className="flex items-center justify-center h-screen bg-[#E5E5E5]">
-                <div className="text-center">
-                    <h2 className="text-2xl font-bold text-[#00509D] mb-4">محصول یافت نشد</h2>
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="bg-[#00509D] hover:bg-[#003F7D] text-white px-4 py-2 rounded font-medium transition-colors"
-                    >
-                        بازگشت به صفحه قبل
-                    </button>
-                </div>
-            </div>
-        );
+    fetchProductData();
+  }, [id]);
+
+  useEffect(() => {
+    if (notification.show) {
+      const timer = setTimeout(() => {
+        setNotification({show: false, message: ''});
+      }, 3000);
+      return () => clearTimeout(timer);
     }
+  }, [notification]);
 
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-US").format(price);
+  };
+
+  const handleAddToCart = (seller: Seller) => {
+    if (!product) return;
+    
+    addToCart({
+  productId: seller.product_id,
+  sellerId: seller.seller_id,
+  name: product.name,
+  price: seller.price,
+  image: IMG,
+  storeName: seller.shop_name,
+  deliveryTime: "۲ تا ۳ روز کاری",
+  stock: seller.stock
+});
+
+    setNotification({
+      show: true,
+      message: `${product.name} از ${seller.shop_name} به سبد خرید اضافه شد`
+    });
+  };
+
+  const renderStars = (rating: number) => {
+    return [...Array(5)].map((_, i) => (
+      <FiStar
+        key={i}
+        className={`w-4 h-4 ${i < Math.floor(rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+      />
+    ));
+  };
+
+  if (loading) {
     return (
-        <div className="bg-[#E5E5E5] min-h-screen" style={{ direction: "rtl" }}>
-            <div className="container mx-auto px-4 py-8">
-                {/* Breadcrumb */}
-                <div className="flex items-center text-sm text-gray-600 mb-6">
-                    <span
-                        className="cursor-pointer hover:text-[#00509D]"
-                        onClick={() => navigate("/")}
-                    >
-                        خانه
-                    </span>
-                    <span className="mx-2">/</span>
-                    <span
-                        className="cursor-pointer hover:text-[#00509D]"
-                        onClick={() => navigate(`/category/${product.category}`)}
-                    >
-                        {product.category}
-                    </span>
-                    <span className="mx-2">/</span>
-                    <span
-                        className="cursor-pointer hover:text-[#00509D]"
-                        onClick={() => navigate(`/subcategory/${product.subcategory}`)}
-                    >
-                        {product.subcategory}
-                    </span>
-                    <span className="mx-2">/</span>
-                    <span className="text-[#00509D] font-medium">{product.name}</span>
-                </div>
-
-                {/* Product Main Info */}
-                <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-                    <div className="flex flex-col md:flex-row gap-6">
-                        {/* Product Image */}
-                        <div className="w-full md:w-1/3 lg:w-1/4 bg-gray-100 rounded-lg flex items-center justify-center p-4">
-                            <img
-                                src={product.image}
-                                alt={product.name}
-                                className="max-h-80 object-contain"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x300?text=Product+Image";
-                                }}
-                            />
-                        </div>
-
-                        {/* Product Details */}
-                        <div className="w-full md:w-2/3 lg:w-3/4">
-                            <h1 className="text-2xl font-bold text-[#00296B] mb-2">{product.name}</h1>
-                            <div className="flex items-center mb-4">
-                                <div className="flex">
-                                    {[...Array(5)].map((_, i) => (
-                                        <svg
-                                            key={i}
-                                            className={`w-5 h-5 ${i < Math.floor(product.rating) ? "text-[#FDC500]" : "text-gray-300"}`}
-                                            fill="currentColor"
-                                            viewBox="0 0 20 20"
-                                        >
-                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                        </svg>
-                                    ))}
-                                </div>
-                                <span className="text-sm text-gray-600 mr-2">({product.rating})</span>
-                                <span className="text-sm text-gray-600">| برند: {product.brand}</span>
-                            </div>
-
-                            <div className="mb-6">
-                                <h2 className="text-lg font-semibold text-[#00509D] mb-2">ویژگی‌های محصول</h2>
-                                <ul className="list-disc pr-5 space-y-1">
-                                    {product.features.map((feature, index) => (
-                                        <li key={index} className="text-gray-700">{feature}</li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            <div className="bg-[#F8F9FA] p-4 rounded-lg">
-                                <h2 className="text-lg font-semibold text-[#00509D] mb-2">توضیحات محصول</h2>
-                                <p className="text-gray-700">{product.description}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Stores Section */}
-                <div className="bg-white rounded-lg shadow-lg p-6">
-                    <h2 className="text-xl font-bold text-[#00296B] mb-6 border-b border-[#00509D] pb-2">
-                        فروشگاه‌های عرضه‌کننده این محصول
-                    </h2>
-
-                    {stores.length > 0 ? (
-                        <div className="space-y-4">
-                            {stores.map(store => (
-                                <div key={store.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-200 pb-4">
-                                    <div className="flex items-center mb-3 sm:mb-0">
-                                        <img
-                                            src={store.logo}
-                                            alt={store.name}
-                                            className="w-12 h-12 object-contain rounded-full border border-gray-200 mr-3"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = "https://via.placeholder.com/50x50?text=Store";
-                                            }}
-                                        />
-                                        <div>
-                                            <h3 className="font-semibold text-[#00509D]">{store.name}</h3>
-                                            <div className="flex items-center text-sm text-gray-600">
-                                                <div className="flex">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <svg
-                                                            key={i}
-                                                            className={`w-3 h-3 ${i < Math.floor(store.rating) ? "text-[#FDC500]" : "text-gray-300"}`}
-                                                            fill="currentColor"
-                                                            viewBox="0 0 20 20"
-                                                        >
-                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                        </svg>
-                                                    ))}
-                                                </div>
-                                                <span className="mr-1">({store.rating})</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-                                        <div className="text-center sm:text-right">
-                                            <div className="text-lg font-bold text-[#00296B]">{formatPrice(store.price)} تومان</div>
-                                            <div className="text-sm text-gray-600">
-                                                {store.stock > 0 ? (
-                                                    <span className="text-green-600">موجود در انبار ({store.stock} عدد)</span>
-                                                ) : (
-                                                    <span className="text-red-600">ناموجود</span>
-                                                )}
-                                            </div>
-                                            <div className="text-xs text-gray-500">تحویل: {store.deliveryTime}</div>
-                                        </div>
-
-                                        <button
-                                            className={`px-4 py-2 rounded-lg font-medium ${store.stock > 0 ? 'bg-[#FDC500] hover:bg-[#FFD700] text-black' : 'bg-gray-300 cursor-not-allowed text-gray-600'}`}
-                                            disabled={store.stock <= 0}
-                                        >
-                                            {store.stock > 0 ? 'افزودن به سبد خرید' : 'ناموجود'}
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-8">
-                            <h3 className="text-lg font-medium text-[#00509D] mb-2">هیچ فروشگاهی برای این محصول یافت نشد</h3>
-                            <p className="text-gray-600 mb-4">متاسفانه در حال حاضر این محصول در هیچ فروشگاهی موجود نمی‌باشد</p>
-                            <button
-                                onClick={() => navigate(-1)}
-                                className="bg-[#00509D] hover:bg-[#003F7D] text-white px-4 py-2 rounded font-medium transition-colors"
-                            >
-                                بازگشت به صفحه قبل
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <LoadingSpinner size="lg" />
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex items-center justify-center min-h-screen bg-gray-50"
+      >
+        <div className="text-center max-w-md p-6 bg-white rounded-xl shadow-md">
+          <h2 className="text-2xl font-bold text-[#00296B] mb-4">{error}</h2>
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-[#00296B] hover:bg-[#00296B] text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center mx-auto"
+          >
+            <FiChevronLeft className="ml-1" />
+            بازگشت به صفحه قبل
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex items-center justify-center min-h-screen bg-gray-50"
+      >
+        <div className="text-center max-w-md p-6 bg-white rounded-xl shadow-md">
+          <h2 className="text-2xl font-bold text-[#00296B] mb-4">محصول یافت نشد</h2>
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-[#00296B]hover:bg-[#00296B] text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center mx-auto"
+          >
+            <FiChevronLeft className="ml-1" />
+            بازگشت به صفحه قبل
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="bg-gray-50 min-h-screen"
+      style={{ direction: "rtl" }}
+    >
+      <AnimatePresence>
+        {notification.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50"
+          >
+            <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center">
+              <FiCheckCircle className="ml-2" />
+              {notification.message}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="bg-white shadow-sm">
+        <div className="container mx-auto px-4 py-3">
+          <nav className="flex items-center text-sm text-gray-600">
+            <button
+              onClick={() => navigate("/")}
+              className="hover:text-[#00296B] transition-colors flex items-center"
+            >
+              <span>خانه</span>
+            </button>
+            <span className="mx-2 text-gray-400">/</span>
+            <button
+              onClick={() => navigate("/shopping-cart")}
+              className="hover:text-[#00296B] transition-colors flex items-center"
+            >
+              <span>سبد خرید</span>
+            </button>
+            <span className="mx-2 text-gray-400">/</span>
+            <button
+              onClick={() => navigate(`/subcategory-products/${encodeURIComponent(product.subcategory)}`)}
+              className="hover:text-[#00296B] transition-colors"
+            >
+              {product.subcategory}
+            </button>
+            <span className="mx-2 text-gray-400">/</span>
+            <span className="text-[#00296B] font-medium truncate max-w-xs">{product.name}</span>
+          </nav>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+          <div className="flex flex-col lg:flex-row">
+            <div className="w-full lg:w-1/2 p-6">
+              <div className="relative bg-gray-100 rounded-lg flex items-center justify-center h-96 mb-4 overflow-hidden">
+                <motion.img
+                  key={selectedImage}
+                  src={product.images?.[selectedImage] || IMG}
+                  alt={product.name}
+                  className="max-h-full max-w-full object-contain"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = IMG;
+                  }}
+                />
+                
+                <button
+                  onClick={() => setIsFavorite(!isFavorite)}
+                  className={`absolute top-4 left-4 p-2 rounded-full ${isFavorite ? 'bg-red-100 text-red-500' : 'bg-white text-gray-400'} shadow-md hover:shadow-lg transition-all`}
+                >
+                  <FiHeart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+                </button>
+              </div>
+              
+              {product.images && product.images.length > 1 && (
+                <div className="flex space-x-2 overflow-x-auto pb-2">
+                  {product.images.map((img, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage(index)}
+                      className={`flex-shrink-0 w-16 h-16 border-2 rounded-md overflow-hidden ${selectedImage === index ? 'border-[#00296B]' : 'border-transparent'}`}
+                    >
+                      <img
+                        src={img}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = IMG;
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="w-full lg:w-1/2 p-6 border-t lg:border-t-0 lg:border-r border-gray-100">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+              
+              <div className="flex items-center mb-4">
+                <div className="flex items-center mr-2">
+                  {renderStars(product.rating || 4)}
+                </div>
+                <span className="text-sm text-gray-500">({product.reviewCount || 24} نظر)</span>
+              </div>
+              
+              <div className="mb-6">
+                <div className="flex items-center text-green-600 mb-2">
+                  <FiCheckCircle className="ml-1" />
+                  <span className="text-sm font-medium">موجود در انبار</span>
+                </div>
+                <p className="text-gray-600 text-sm">{product.description || "این محصول با کیفیت بالا و گارانتی اصالت کالا عرضه می‌شود."}</p>
+              </div>
+              
+              <div className="bg-blue-50 rounded-lg p-6 mb-6">
+                <h3 className="text-sm font-medium text-gray-500 mb-1">محدوده قیمت</h3>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 text-sm">از</span>
+                  <div className="text-left">
+                    <span className="text-lg font-bold text-[#00296B]">
+                      {formatPrice(Math.min(...product.sellers.map(s => s.price)))}
+                    </span>
+                    <span className="text-sm text-gray-500 mr-1">تومان</span>
+                  </div>
+                  <span className="text-gray-500 text-sm">تا</span>
+                  <div className="text-left">
+                    <span className="text-lg font-bold text-[#00296B]">
+                      {formatPrice(Math.max(...product.sellers.map(s => s.price)))}
+                    </span>
+                    <span className="text-sm text-gray-500 mr-1">تومان</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+          <div className="border-b border-gray-200">
+            <nav className="flex -mb-px">
+              <button
+                onClick={() => setActiveTab("description")}
+                className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === "description" ? 'border-[#00296B] text-[#00296B]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+              >
+                توضیحات محصول
+              </button>
+            </nav>
+          </div>
+          
+          <div className="p-6">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {activeTab === "description" && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">توضیحات کامل محصول</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      {product.description || "این محصول با کیفیت بالا و مطابق با استانداردهای بین‌المللی تولید شده است. دارای گارانتی اصالت و سلامت فیزیکی کالا می‌باشد. طراحی ارگونومیک و کاربرپسند این محصول، تجربه‌ای لذت‌بخش را برای شما به ارمغان می‌آورد."}
+                    </p>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-800">
+              فروشگاه‌های عرضه‌کننده این محصول
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">بهترین قیمت‌ها از معتبرترین فروشگاه‌ها</p>
+          </div>
+          
+          <div className="divide-y divide-gray-200">
+            {product.sellers.map((seller) => (
+              <motion.div
+                key={`${product.id}-${seller.seller_id}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="p-6 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center flex-1">
+                    <img
+                      src={seller.logo || IMG}
+                      alt={seller.shop_name}
+                      className="w-16 h-16 object-contain rounded-lg border border-gray-200 ml-4"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = IMG;
+                      }}
+                    />
+                    <div>
+                      <h3 className="font-semibold text-gray-800">{seller.shop_name}</h3>
+                      <div className="flex items-center mt-1">
+                        {renderStars(4)}
+                        <span className="text-xs text-gray-500 mr-1">({Math.floor(Math.random() * 50) + 10})</span>
+                      </div>
+                      <div className="flex items-center text-xs mt-1 ${
+                        seller.stock > 0 ? 'text-green-600' : 'text-red-600'
+                      }">
+                        {seller.stock > 0 
+                          ? `${seller.stock} عدد در انبار موجود است`
+                          : 'موجود نیست - به زودی'}
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500 mt-1">
+                        <FiClock className="ml-1" />
+                        <span>تحویل: {seller.delivery_time || "۲ تا ۳ روز کاری"}</span>
+                      </div>
+                    </div>
+                  </div>
+                        
+                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
+                    <div className="text-center">
+                      {seller.discount && (
+                        <div className="text-xs text-gray-500 line-through mb-1">
+                          {formatPrice(seller.price + (seller.price * seller.discount / 100))} تومان
+                        </div>
+                      )}
+                      <div className="text-lg font-bold text-[#00296B]">
+                        {formatPrice(seller.price)} تومان
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (seller.stock > 0) {
+                          handleAddToCart(seller);
+                        }
+                      }}
+                      className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center ${
+                        seller.stock > 0
+                          ? 'bg-[#00296B] hover:bg-blue-900 text-white'
+                          : 'bg-red-100 text-red-800 cursor-not-allowed'
+                      }`}
+                      disabled={seller.stock <= 0}
+                    >
+                      <FiShoppingCart className="ml-2" />
+                      {seller.stock > 0 ? 'افزودن به سبد' : 'ناموجود'}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
 };
 
 export default ProductDetail;

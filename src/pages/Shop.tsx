@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { categories, Category, Subcategory } from "../data/categories";
+import { categories } from "../data/categories";
 
 const Shop: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);

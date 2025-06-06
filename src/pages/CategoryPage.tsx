@@ -45,7 +45,7 @@ const CategoryPage: React.FC = () => {
                         products.map((product) => (
                             <Link
                                 key={product.id}
-                                to={`/product/${product.id}`}
+                                to={`/products/${product.id}`}
                                 className="p-4 bg-white rounded-lg shadow-md text-center hover:shadow-lg transition-shadow"
                             >
                                 <div className="h-48 bg-gray-200 flex items-center justify-center mb-2 rounded-lg overflow-hidden">

@@ -1,11 +1,9 @@
 import React, { useState, useRef } from "react";
 import { categories } from "../data/categories";
-import { useNavigate } from "react-router-dom";
 
 const CategoryMenu: React.FC = () => {
     const [showMenu, setShowMenu] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const navigate = useNavigate();
 
     const handleMouseEnter = () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -16,11 +14,6 @@ const CategoryMenu: React.FC = () => {
         timeoutRef.current = setTimeout(() => {
             setShowMenu(false);
         }, 200);
-    };
-
-    const handleSubCategoryClick = (subCategoryName: string) => {
-        const encodedName = encodeURIComponent(subCategoryName);
-        navigate(`/subcategory-products/${encodedName}`);
     };
 
     return (
@@ -44,7 +37,6 @@ const CategoryMenu: React.FC = () => {
                                     <li
                                         key={i}
                                         className="hover:text-[#FDC500] transition-colors cursor-pointer pr-2"
-                                        onClick={() => handleSubCategoryClick(sub.name)} // Add onClick for navigation
                                     >
                                         {sub.name}
                                     </li>
