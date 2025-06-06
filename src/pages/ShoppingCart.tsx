@@ -42,15 +42,18 @@ const ShoppingCart: React.FC = () => {
   const handleStoreCheckout = async (storeId: number, storeItems: typeof cartItems) => {
     setIsCheckingOut(true);
     try {
-      await Promise.all(
-        storeItems.map(item => updateProductStock(item.productId, item.quantity))
-      );
-
       const order = await checkoutOrder(
         storeItems.map(item => ({
           product_id: item.productId,
+          seller_id: item.sellerId,
           quantity: item.quantity
         }))
+      );
+
+      await Promise.all(
+        storeItems.map(item =>
+          updateProductStock(item.productId, item.quantity)
+        )
       );
 
       storeItems.forEach(item => {

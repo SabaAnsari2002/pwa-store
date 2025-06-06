@@ -152,17 +152,17 @@ const OrderManagement: React.FC = () => {
     <div className="p-4 md:p-6 bg-gray-200 min-h-screen" style={{ direction: 'rtl' }}>
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">مدیریت سفارشات</h1>
-          <p className="text-gray-600 mt-2">نمایش و مدیریت تمامی سفارشات سیستم</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#00296B]">مدیریت سفارشات</h1>
+          <p className="text-[#00296B] mt-2">نمایش و مدیریت تمامی سفارشات سیستم</p>
         </div>
         
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-[#00296B] overflow-hidden mb-6">
           <div className="p-4 md:p-6">
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-medium text-gray-700">فیلتر وضعیت سفارشات</h2>
-                <span className="text-sm text-gray-500">
-                  <span className="font-medium text-gray-700">{filteredOrders.length}</span> سفارش یافت شد
+                <h2 className="text-lg font-medium text-[#00296B]">فیلتر وضعیت سفارشات</h2>
+                <span className="text-sm text-[#00296B]">
+                  <span className="font-medium text-[#00296B]">{filteredOrders.length}</span> سفارش یافت شد
                 </span>
               </div>
               
@@ -174,7 +174,7 @@ const OrderManagement: React.FC = () => {
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2
                       ${statusFilter === filter.value 
                         ? `${filter.color} shadow-inner border font-semibold` 
-                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}
+                        : 'bg-white text-[#00296B] hover:bg-gray-100 border border-[#00296B]'}
                     `}
                   >
                     {filter.label}
@@ -198,13 +198,13 @@ const OrderManagement: React.FC = () => {
         {loading ? (
           <div className="p-8 text-center">
             <div className="inline-flex items-center justify-center">
-              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#00296B]"></div>
               <span className="mr-3 text-gray-600">در حال بارگذاری سفارشات...</span>
             </div>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="p-8 text-center">
-            <div className="inline-flex flex-col items-center justify-center text-gray-400">
+            <div className="inline-flex flex-col items-center justify-center text-[#00296B]">
               <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
               </svg>
@@ -217,7 +217,7 @@ const OrderManagement: React.FC = () => {
             {filteredOrders.map((order) => (
               <div 
                 key={order.id} 
-                className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                className="bg-white rounded-xl shadow-sm border border-[#00296B] overflow-hidden hover:shadow-md transition-shadow"
               >
                 <div 
                   className="p-4 md:p-6 cursor-pointer"
@@ -226,12 +226,12 @@ const OrderManagement: React.FC = () => {
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex items-start gap-4">
                       <div className="bg-blue-50 p-3 rounded-lg">
-                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <svg className="w-6 h-6 text-[#00296B]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                         </svg>
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-800">سفارش #{order.id}</h3>
+                        <h3 className="font-medium text-[#00296B]">سفارش #{order.id}</h3>
                         <p className="text-sm text-gray-500 mt-1">مشتری: {order.user.username}</p>
                         <p className="text-xs text-gray-400 mt-1">{formatDate(order.created_at)}</p>
                       </div>
@@ -242,7 +242,7 @@ const OrderManagement: React.FC = () => {
                         <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(order.status)}`}>
                           {getStatusText(order.status)}
                         </span>
-                        <span className="font-medium text-gray-800">
+                        <span className="font-medium text-[#00296B]">
                           {order.total_price.toLocaleString('fa-IR')} تومان
                         </span>
                       </div>
@@ -345,9 +345,9 @@ const OrderManagement: React.FC = () => {
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-sm font-medium text-gray-800">{item.price.toLocaleString('fa-IR')} تومان</p>
-                              <p className="text-xs text-gray-500 mt-1">تعداد: {item.quantity.toLocaleString('fa-IR')}</p>
-                              <p className="text-xs font-medium text-gray-700 mt-1">
+                              <p className="text-sm font-medium text-[#00296B]">{item.price.toLocaleString('fa-IR')} تومان</p>
+                              <p className="text-xs text-[#00296B] mt-1">تعداد: {item.quantity.toLocaleString('fa-IR')}</p>
+                              <p className="text-xs font-medium text-[#00296B] mt-1">
                                 جمع: {(item.price * item.quantity).toLocaleString('fa-IR')} تومان
                               </p>
                             </div>
@@ -357,7 +357,7 @@ const OrderManagement: React.FC = () => {
                       
                       <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center">
                         <span className="text-sm text-gray-600">جمع کل سفارش:</span>
-                        <span className="font-medium text-lg text-gray-800">{order.total_price.toLocaleString('fa-IR')} تومان</span>
+                        <span className="font-medium text-lg text-[#00296B]">{order.total_price.toLocaleString('fa-IR')} تومان</span>
                       </div>
                     </div>
                   </div>

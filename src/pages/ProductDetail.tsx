@@ -6,6 +6,7 @@ import { FiStar, FiChevronLeft, FiShoppingCart, FiHeart, FiShare2, FiClock, FiCh
 import IMG from "../assets/img.jpg";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useCart } from "../contexts/CartContext";
+import { toast } from "react-toastify";
 
 interface Product {
   id: number;
@@ -48,7 +49,7 @@ interface Seller {
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, isInCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [stores, setStores] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,17 +96,33 @@ const ProductDetail: React.FC = () => {
 
   const handleAddToCart = (seller: Seller) => {
     if (!product) return;
+
+    if (isInCart(seller.product_id, seller.seller_id)) {
+      toast.info("این محصول قبلاً در سبد خرید شما ثبت شده است", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    if (seller.stock <= 0) {
+      toast.error("موجودی این محصول کافی نیست", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+      return;
+    }
     
     addToCart({
-  productId: seller.product_id,
-  sellerId: seller.seller_id,
-  name: product.name,
-  price: seller.price,
-  image: IMG,
-  storeName: seller.shop_name,
-  deliveryTime: "۲ تا ۳ روز کاری",
-  stock: seller.stock
-});
+      productId: seller.product_id,
+      sellerId: seller.seller_id,
+      name: product.name,
+      price: seller.price,
+      image: IMG,
+      storeName: seller.shop_name,
+      deliveryTime: "۲ تا ۳ روز کاری",
+      stock: seller.stock
+    });
 
     setNotification({
       show: true,
@@ -405,23 +422,26 @@ const ProductDetail: React.FC = () => {
                         {formatPrice(seller.price)} تومان
                       </div>
                     </div>
-                    
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (seller.stock > 0) {
-                          handleAddToCart(seller);
-                        }
+                        handleAddToCart(seller);
                       }}
-                      className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center ${
+                      className={`w-[200px] px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center ${
                         seller.stock > 0
-                          ? 'bg-[#00296B] hover:bg-blue-900 text-white'
+                          ? isInCart(seller.product_id, seller.seller_id)
+                            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                            : 'bg-[#00296B] hover:bg-blue-900 text-white'
                           : 'bg-red-100 text-red-800 cursor-not-allowed'
                       }`}
-                      disabled={seller.stock <= 0}
+                      disabled={seller.stock <= 0 || isInCart(seller.product_id, seller.seller_id)}
                     >
                       <FiShoppingCart className="ml-2" />
-                      {seller.stock > 0 ? 'افزودن به سبد' : 'ناموجود'}
+                      {seller.stock > 0 
+                        ? isInCart(seller.product_id, seller.seller_id)
+                          ? 'اضافه شده به سبد'
+                          : 'افزودن به سبد'
+                        : 'ناموجود'}
                     </button>
                   </div>
                 </div>
