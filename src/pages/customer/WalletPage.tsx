@@ -155,16 +155,9 @@ const WalletPage: React.FC = () => {
         }
     };
     const formatCardNumber = (cardNumber: string | number): string => {
-        const str = String(cardNumber).replace(/\D/g, "");
-        const result = [];
-
-        // گروه‌بندی از راست به چپ
-        for (let i = str.length; i > 0; i -= 4) {
-            result.unshift(str.slice(Math.max(i - 4, 0), i));
-        }
-
-        return result.join(" ");
+        return String(cardNumber).replace(/\D/g, ""); // حذف تمام غیر از اعداد
     };
+    
 
 
     const formatCurrency = (amount: number) => {
@@ -244,7 +237,7 @@ const WalletPage: React.FC = () => {
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <p className="text-[#000000] font-medium">
-                                                    {card.card_name} - {formatCardNumber(card.card_number).split('').reverse().join('')}
+                                                    {card.card_name} - {formatCardNumber(card.card_number)}
                                                 </p>
                                                 {card.is_default && (
                                                     <span className="inline-block bg-[#E6F7FF] text-[#00509D] text-xs px-2 py-1 rounded mt-1">
