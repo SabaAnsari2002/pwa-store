@@ -39,18 +39,17 @@ const API_URL = 'http://localhost:8000/api/orders';
 
 export const getOrders = async (): Promise<Order[]> => {
   try {
-    const response = await axios.get(`${API_URL}/by-seller/`, {
+    const response = await axios.get(`${API_URL}/by-user/`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
       }
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching seller orders:', error);
+    console.error('Error fetching user orders:', error);
     throw error;
   }
 };
-
 
 export const getOrderDetails = async (orderId: number): Promise<Order> => {
   try {
@@ -68,7 +67,7 @@ export const checkoutOrder = async (items: CheckoutItem[]) => {
     { items },
     {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
       }
     }
   );

@@ -40,6 +40,7 @@ import ProductDetail from "./pages/ProductDetail";
 import ShoppingCart from './pages/ShoppingCart';
 import { CartProvider } from './contexts/CartContext';
 import OrderDetails from "./pages/OrderDetails";
+import { WishlistProvider } from './contexts/WishlistContext';
 
 const App: React.FC = () => {
     const [user, setUser] = useState<string | null>(localStorage.getItem("user"));
@@ -47,59 +48,61 @@ const App: React.FC = () => {
 
     return (
         <CartProvider>
-            <Router>
-                <Routes>
-                    {/* مسیرهای اصلی */}
-                    <Route path="/" element={<Home user={user} setUser={setUser} isSeller={isSeller} setIsSeller={setIsSeller} />} />
-                    <Route path="/login" element={<Login setUser={setUser} />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/category/:id" element={<CategoryPage />} />
-                    <Route path="/subcategory/:id" element={<SubCategoryPage />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/blog" element={<Blog />} />
-                    <Route path="/blog/:id" element={<BlogPostDetail />} />
-                    <Route path="/shop" element={<Shop />} />
-                    <Route path="/subcategory-products/:id" element={<SubCategoryProducts />} />
-                    <Route path="/product/:id" element={<ProductDetail />} />
-                    <Route path="/shopping-cart" element={<ShoppingCart />} />
-                    <Route path="/products/:id" element={<ProductDetail />} />
-                    <Route path="/orders" element={<OrderManagement />} />
-                    <Route path="/orders/:id" element={<OrderDetails />} />
-                    {/* مسیرهای جدید فروشنده */}
-                    <Route path="/seller-register" element={<SellerRegister setIsSeller={setIsSeller} />} />
-                    <Route path="/seller-login" element={<SellerLogin setIsSeller={setIsSeller} />} />
+            <WishlistProvider>
+                <Router>
+                    <Routes>
+                        {/* مسیرهای اصلی */}
+                        <Route path="/" element={<Home user={user} setUser={setUser} isSeller={isSeller} setIsSeller={setIsSeller} />} />
+                        <Route path="/login" element={<Login setUser={setUser} />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="/category/:id" element={<CategoryPage />} />
+                        <Route path="/subcategory/:id" element={<SubCategoryPage />} />
+                        <Route path="/about" element={<About />} />
+                        <Route path="/contact" element={<Contact />} />
+                        <Route path="/blog" element={<Blog />} />
+                        <Route path="/blog/:id" element={<BlogPostDetail />} />
+                        <Route path="/shop" element={<Shop />} />
+                        <Route path="/subcategory-products/:id" element={<SubCategoryProducts />} />
+                        <Route path="/product/:id" element={<ProductDetail />} />
+                        <Route path="/shopping-cart" element={<ShoppingCart />} />
+                        <Route path="/products/:id" element={<ProductDetail />} />
+                        <Route path="/orders" element={<OrderManagement />} />
+                        <Route path="/orders/:id" element={<OrderDetails />} />
+                        {/* مسیرهای جدید فروشنده */}
+                        <Route path="/seller-register" element={<SellerRegister setIsSeller={setIsSeller} />} />
+                        <Route path="/seller-login" element={<SellerLogin setIsSeller={setIsSeller} />} />
 
-                    {/* مسیرهای پنل فروشنده */}
-                    <Route path="/seller-dashboard" element={<SellerDashboard isSeller={isSeller} />}>
-                        <Route index element={<DashboardContent />} />
-                        <Route path="products" element={<ProductManagement />} />
-                        <Route path="orders" element={<OrderManagement />} />
-                        <Route path="financial" element={<FinancialManagement />} />
-                        <Route path="customers" element={<CustomerManagement />} />
-                        <Route path="discounts" element={<DiscountManagement />} />
-                        <Route path="reports" element={<ReportsAndAnalytics />} />
-                        <Route path="settings" element={<Settings />} />
-                        <Route path="team" element={<TeamManagement />} />
-                    </Route>
+                        {/* مسیرهای پنل فروشنده */}
+                        <Route path="/seller-dashboard" element={<SellerDashboard isSeller={isSeller} />}>
+                            <Route index element={<DashboardContent />} />
+                            <Route path="products" element={<ProductManagement />} />
+                            <Route path="orders" element={<OrderManagement />} />
+                            <Route path="financial" element={<FinancialManagement />} />
+                            <Route path="customers" element={<CustomerManagement />} />
+                            <Route path="discounts" element={<DiscountManagement />} />
+                            <Route path="reports" element={<ReportsAndAnalytics />} />
+                            <Route path="settings" element={<Settings />} />
+                            <Route path="team" element={<TeamManagement />} />
+                        </Route>
 
-                    {/* مسیرهای پنل کاربری */}
-                    <Route path="/customer-dashboard" element={<CustomerDashboard user={user} />}>
-                        <Route index element={<CustomerDashboardContent />} />
-                        <Route path="orders" element={<OrdersPageCustomer />} />
-                        <Route path="addresses" element={<AddressesPageCustomer />} />
-                        <Route path="wallet" element={<WalletPageCustomer />} />
-                        <Route path="account-setting" element={<AccountSettingsPageCustomer />} />
-                        <Route path="discount" element={<DiscountPageCustomer />} />
-                        <Route path="support" element={<SupportPageCustomer />} />
-                        <Route path="wishlist" element={<WishlistPageCustomer />} />
-                        <Route path="reviews" element={<ReviewsPageCustomer />} />
-                        <Route path="notifications" element={<NotificationsPageCustomer />} />
-                        <Route path="loyalty" element={<LoyaltyPageCustomer />} />
-                        <Route path="compare-products" element={<CompareProductsPageCustomer />} />
-                    </Route>
-                </Routes>
-            </Router>
+                        {/* مسیرهای پنل کاربری */}
+                        <Route path="/customer-dashboard" element={<CustomerDashboard user={user} />}>
+                            <Route index element={<CustomerDashboardContent />} />
+                            <Route path="orders" element={<OrdersPageCustomer />} />
+                            <Route path="addresses" element={<AddressesPageCustomer />} />
+                            <Route path="wallet" element={<WalletPageCustomer />} />
+                            <Route path="account-setting" element={<AccountSettingsPageCustomer />} />
+                            <Route path="discount" element={<DiscountPageCustomer />} />
+                            <Route path="support" element={<SupportPageCustomer />} />
+                            <Route path="wishlist" element={<WishlistPageCustomer />} />
+                            <Route path="reviews" element={<ReviewsPageCustomer />} />
+                            <Route path="notifications" element={<NotificationsPageCustomer />} />
+                            <Route path="loyalty" element={<LoyaltyPageCustomer />} />
+                            <Route path="compare-products" element={<CompareProductsPageCustomer />} />
+                        </Route>
+                    </Routes>
+                </Router>
+            </WishlistProvider>
         </CartProvider>
     );
 };

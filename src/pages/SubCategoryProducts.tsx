@@ -3,9 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { categories, Category, Subcategory } from "../data/categories";
 import { Product } from "../data/products";
 import { getProductsBySubcategory } from "../api/products";
+import { FiFilter, FiX, FiChevronDown, FiChevronUp, FiStar, FiShoppingCart } from "react-icons/fi";
 import IMG from "../assets/img.jpg";
-import { motion, AnimatePresence } from "framer-motion";
-import { FiFilter, FiX, FiShoppingCart, FiHeart } from "react-icons/fi";
 
 const SubCategoryProducts: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -14,7 +13,7 @@ const SubCategoryProducts: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000000]);
     const [expandedCategories, setExpandedCategories] = useState<number[]>([]);
-    const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+    const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -55,7 +54,7 @@ const SubCategoryProducts: React.FC = () => {
     };
 
     const formatPrice = (price: number) => {
-        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return new Intl.NumberFormat('fa-IR').format(price) + " تومان";
     };
 
     const filteredProducts = products.filter(product => {
@@ -64,149 +63,254 @@ const SubCategoryProducts: React.FC = () => {
         return true;
     });
 
+    const resetFilters = () => {
+        setPriceRange([0, 50000000]);
+    };
+
     return (
-        <div className="flex bg-[#E5E5E5] min-h-screen" style={{ direction: "rtl" }}>
-            <aside className="w-1/5 bg-[#00296B] text-white p-4 h-screen sticky top-0 overflow-y-auto">
-                <h2 className="text-xl font-bold mb-6 text-[#FDC500] border-b border-[#00509D] pb-2">دسته‌بندی‌ها</h2>
-                <div className="space-y-2">
-                    <button
-                        className="flex justify-between items-center cursor-pointer p-2 bg-[#00509D] hover:bg-[#003F7D] rounded-lg w-full"
-                        onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                    >
-                        <span>دسته‌بندی‌ها</span>
-                        <span>{isCategoriesOpen ? '−' : '+'}</span>
-                    </button>
+        <div className="bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9] min-h-screen" style={{ direction: "rtl" }}>
+            <button
+                onClick={() => setIsMobileFiltersOpen(true)}
+                className="lg:hidden fixed bottom-6 left-6 z-20 bg-[#00296B] text-white p-3 rounded-full shadow-lg flex items-center justify-center"
+            >
+                <FiFilter size={24} />
+            </button>
 
-                    {isCategoriesOpen && (
-                        <div className="mt-2 space-y-2">
-                            {categories.map(category => (
-                                <div key={category.id} className="mb-2">
-                                    <div
-                                        className="flex justify-between items-center cursor-pointer p-2 hover:bg-[#00509D] rounded-lg"
-                                        onClick={() => toggleCategory(category.id)}
-                                    >
-                                        <span>{category.name}</span>
-                                        <span>
-                                            {expandedCategories.includes(category.id) ? '−' : '+'}
-                                        </span>
-                                    </div>
-
-                                    {expandedCategories.includes(category.id) && (
-                                        <div className="pr-4 mt-1 space-y-1">
-                                            {category.subcategories.map(sub => (
-                                                <div
-                                                    key={sub.id}
-                                                    className={`p-2 rounded-lg cursor-pointer ${currentSubcategory === sub.name ? 'bg-[#FDC500] text-black' : 'hover:bg-[#003F7D]'}`}
-                                                    onClick={() => navigate(`/subcategory-products/${encodeURIComponent(sub.name)}`)}
-                                                >
-                                                    {sub.name}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div className="mt-6 mb-6">
-                    <h3 className="font-semibold mb-3 text-[#FDC500]">محدوده قیمت</h3>
-                    <div className="px-2">
-                        <input
-                            type="range"
-                            min="0"
-                            max="50000000"
-                            step="1000000"
-                            value={priceRange[0]}
-                            onChange={(e) => handlePriceChange(e, 0)}
-                            className="w-full mb-2 accent-[#FDC500]"
-                        />
-                        <input
-                            type="range"
-                            min="0"
-                            max="50000000"
-                            step="1000000"
-                            value={priceRange[1]}
-                            onChange={(e) => handlePriceChange(e, 1)}
-                            className="w-full mb-4 accent-[#FDC500]"
-                        />
-                        <div className="flex justify-between text-sm">
-                            <span>{formatPrice(priceRange[0])} تومان</span>
-                            <span>{formatPrice(priceRange[1])} تومان</span>
-                        </div>
-                    </div>
-                </div>
-
-                <button
-                    onClick={() => {
-                        setPriceRange([0, 50000000]);
-                    }}
-                    className="w-full py-2 bg-[#FDC500] text-black rounded-lg font-medium hover:bg-[#FFD700] transition-colors"
-                >
-                    حذف فیلتر
-                </button>
-            </aside>
-
-            <main className="w-3/4 p-6">
-                <h1 className="text-2xl font-bold text-[#00509D] mb-6">
-                    محصولات دسته‌بندی: {currentSubcategory}
-                </h1>
-
-                {loading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#00509D]"></div>
-                    </div>
-                ) : (
-                    <>
-                        <div className="flex justify-between items-center mb-6 bg-white p-3 rounded-lg shadow">
-                            <div className="text-sm text-gray-600">
-                                {filteredProducts.length} محصول یافت شد
-                            </div>
+            {isMobileFiltersOpen && (
+                <div className="lg:hidden fixed inset-0 z-30 bg-black bg-opacity-50">
+                    <div className="absolute inset-y-0 left-0 w-4/5 bg-[#00296B] text-white p-4 overflow-y-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-[#FDC500]">فیلترها</h2>
+                            <button onClick={() => setIsMobileFiltersOpen(false)}>
+                                <FiX size={24} />
+                            </button>
                         </div>
 
-                        {filteredProducts.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredProducts.map(product => (
-                                    <div
-                                        key={product.id}
-                                        className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                                        onClick={() => navigate(`/products/${product.id}`)}
-                                    >
-                                        <div className="max-w-sm rounded-lg overflow-hidden shadow-lg bg-white transition-transform duration-300 hover:shadow-xl hover:-translate-y-1">
-                                          <div className="h-48 bg-gray-100 flex items-center justify-center relative">
-                                            <img
-                                              src={IMG}
-                                              className="h-full w-full object-cover"
-                                            />
-                                          </div>
-                                          
-                                          <div className="p-5">
-                                            <div className="flex justify-between items-center mb-2">
-                                              <h3 className="font-bold text-xl text-gray-800 truncate">{product.name}</h3>
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="font-semibold mb-3 text-[#FDC500] border-b border-[#00509D] pb-2">دسته‌بندی‌ها</h3>
+                                <div className="space-y-2">
+                                    {categories.map(category => (
+                                        <div key={category.id} className="mb-2">
+                                            <div
+                                                className="flex justify-between items-center cursor-pointer p-2 hover:bg-[#00509D] rounded-lg"
+                                                onClick={() => toggleCategory(category.id)}
+                                            >
+                                                <span>{category.name}</span>
+                                                {expandedCategories.includes(category.id) ? <FiChevronUp /> : <FiChevronDown />}
                                             </div>
-                                          </div>
+
+                                            {expandedCategories.includes(category.id) && (
+                                                <div className="pr-4 mt-1 space-y-1">
+                                                    {category.subcategories.map(sub => (
+                                                        <div
+                                                            key={sub.id}
+                                                            className={`p-2 rounded-lg cursor-pointer ${currentSubcategory === sub.name ? 'bg-[#FDC500] text-black' : 'hover:bg-[#003F7D]'}`}
+                                                            onClick={() => {
+                                                                navigate(`/subcategory-products/${encodeURIComponent(sub.name)}`);
+                                                                setIsMobileFiltersOpen(false);
+                                                            }}
+                                                        >
+                                                            {sub.name}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className="font-semibold mb-3 text-[#FDC500] border-b border-[#00509D] pb-2">محدوده قیمت</h3>
+                                <div className="px-2">
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="50000000"
+                                        step="1000000"
+                                        value={priceRange[0]}
+                                        onChange={(e) => handlePriceChange(e, 0)}
+                                        className="w-full mb-2 accent-[#FDC500]"
+                                    />
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="50000000"
+                                        step="1000000"
+                                        value={priceRange[1]}
+                                        onChange={(e) => handlePriceChange(e, 1)}
+                                        className="w-full mb-4 accent-[#FDC500]"
+                                    />
+                                    <div className="flex justify-between text-sm">
+                                        <span>{formatPrice(priceRange[0])}</span>
+                                        <span>{formatPrice(priceRange[1])}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={resetFilters}
+                                className="w-full py-2 bg-[#FDC500] text-black rounded-lg font-medium hover:bg-[#FFD700] transition-colors"
+                            >
+                                حذف فیلترها
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="flex flex-col lg:flex-row gap-6">
+                    <aside className="hidden lg:block lg:w-1/4">
+                        <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-6">
+                            <h2 className="text-xl font-bold text-[#1e293b] flex items-center mb-6 border-b border-[#FDC500] pb-2">
+                                <FiFilter className="ml-2 text-[#00296B]" size={20} />
+                                فیلترها
+                            </h2>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="font-semibold mb-3 text-[#1e293b]">دسته‌بندی‌ها</h3>
+                                    <div className="space-y-2">
+                                        {categories.map(category => (
+                                            <div key={category.id} className="mb-2">
+                                                <div
+                                                    className="flex justify-between items-center cursor-pointer p-2 hover:bg-[#f1f5f9] rounded-lg"
+                                                    onClick={() => toggleCategory(category.id)}
+                                                >
+                                                    <span>{category.name}</span>
+                                                    {expandedCategories.includes(category.id) ? <FiChevronUp /> : <FiChevronDown />}
+                                                </div>
+
+                                                {expandedCategories.includes(category.id) && (
+                                                    <div className="pr-4 mt-1 space-y-1">
+                                                        {category.subcategories.map(sub => (
+                                                            <div
+                                                                key={sub.id}
+                                                                className={`p-2 rounded-lg cursor-pointer ${currentSubcategory === sub.name ? 'bg-[#FDC500] text-black' : 'hover:bg-[#f1f5f9]'}`}
+                                                                onClick={() => navigate(`/subcategory-products/${encodeURIComponent(sub.name)}`)}
+                                                            >
+                                                                {sub.name}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="font-semibold mb-3 text-[#1e293b]">محدوده قیمت</h3>
+                                    <div className="px-2">
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="50000000"
+                                            step="1000000"
+                                            value={priceRange[0]}
+                                            onChange={(e) => handlePriceChange(e, 0)}
+                                            className="w-full mb-2 accent-[#00296B]"
+                                        />
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="50000000"
+                                            step="1000000"
+                                            value={priceRange[1]}
+                                            onChange={(e) => handlePriceChange(e, 1)}
+                                            className="w-full mb-4 accent-[#00296B]"
+                                        />
+                                        <div className="flex justify-between text-sm text-[#64748b]">
+                                            <span>{formatPrice(priceRange[0])}</span>
+                                            <span>{formatPrice(priceRange[1])}</span>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="bg-white rounded-lg shadow p-8 text-center">
-                                <h3 className="text-lg font-medium text-[#00509D] mb-2">محصولی یافت نشد</h3>
-                                <p className="text-gray-600 mb-4">با تغییر فیلترها دوباره امتحان کنید</p>
+                                </div>
+
                                 <button
-                                    onClick={() => {
-                                        setPriceRange([0, 50000000]);
-                                    }}
-                                    className="bg-[#00509D] hover:bg-[#003F7D] text-white px-4 py-2 rounded font-medium transition-colors"
+                                    onClick={resetFilters}
+                                    className="w-full py-2 bg-gradient-to-r from-[#00296B] to-[#00509D] text-white rounded-lg font-medium hover:shadow-md transition-all"
                                 >
-                                    حذف همه فیلترها
+                                    حذف فیلترها
                                 </button>
                             </div>
+                        </div>
+                    </aside>
+
+                    <main className="w-full lg:w-3/4">
+                        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+                            <h1 className="text-2xl font-bold text-[#00296B] mb-2">
+                                {currentSubcategory}
+                            </h1>
+                            <p className="text-[#64748b]">
+                                {filteredProducts.length} محصول در این دسته‌بندی
+                            </p>
+                        </div>
+
+                        {loading ? (
+                            <div className="flex justify-center items-center h-64">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#00509D]"></div>
+                            </div>
+                        ) : (
+                            <>
+                                {filteredProducts.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {filteredProducts.map(product => (
+                                            <div
+                                                key={product.id}
+                                                className="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-all cursor-pointer group"
+                                                onClick={() => navigate(`/products/${product.id}`)}
+                                            >
+                                                <div className="relative h-60 overflow-hidden">
+                                                    <img
+                                                        src={IMG}
+                                                        alt={product.name}
+                                                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                    />
+                                                </div>
+                                                
+                                                <div className="p-5">
+                                                    <h3 className="font-bold text-lg text-[#1e293b] mb-2 truncate">
+                                                        {product.name}
+                                                    </h3>
+                                                    
+                                                    <div className="flex items-center mb-2">
+                                                        <div className="flex text-[#FDC500]">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <FiStar 
+                                                                    key={i} 
+                                                                    fill={i < (product.rating || 0) ? "#FDC500" : "none"}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+                                        <h3 className="text-xl font-bold text-[#00296B] mb-2">
+                                            محصولی یافت نشد
+                                        </h3>
+                                        <p className="text-[#64748b] mb-4">
+                                            با تغییر فیلترها دوباره امتحان کنید
+                                        </p>
+                                        <button
+                                            onClick={resetFilters}
+                                            className="bg-gradient-to-r from-[#00296B] to-[#00509D] text-white px-6 py-2 rounded-lg hover:shadow-md transition-all"
+                                        >
+                                            حذف همه فیلترها
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
-                    </>
-                )}
-            </main>
+                    </main>
+                </div>
+            </div>
         </div>
     );
 };

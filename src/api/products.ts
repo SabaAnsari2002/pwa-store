@@ -45,7 +45,7 @@ export const updateProductStock = async (productId: number, quantityChange: numb
       { quantity: quantityChange },
       {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         }
       }
     );
