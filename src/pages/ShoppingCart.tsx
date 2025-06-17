@@ -16,6 +16,8 @@ const ShoppingCart: React.FC = () => {
     totalPrice,
   } = useCart();
   const userId = localStorage.getItem("user-id");
+  const navigate = useNavigate();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   const groupItemsByStore = () => {
     const grouped: Record<number, { storeName: string; items: typeof cartItems }> = {};
@@ -33,16 +35,14 @@ const ShoppingCart: React.FC = () => {
     return grouped;
   };
 
-  const navigate = useNavigate();
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('fa-IR').format(price);
-  };
-
   const handleStoreCheckout = async (storeId: number, storeItems: typeof cartItems) => {
+    if (!userId) {
+      navigate('/login');
+      return;
+    }
+    
     setIsCheckingOut(true);
-  
+
     try {
       const order = await checkoutOrder(
         storeItems.map(item => ({
@@ -62,16 +62,20 @@ const ShoppingCart: React.FC = () => {
       });
     
     } catch (error: any) {
+      console.error('Checkout error:', error);
       let errorMessage = 'خطا در ثبت سفارش';
     
-      if (error.response?.data?.error?.includes('موجودی')) {
-        errorMessage = 'موجودی برخی محصولات کافی نیست';
-        const outOfStockItems = storeItems.filter(item =>
-          error.response.data.error.includes(item.productId.toString())
-        );
-        outOfStockItems.forEach(item => {
-          updateQuantity(item.productId, item.sellerId, item.stock);
-        });
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+        
+        if (error.response.data.error.includes('موجودی')) {
+          const outOfStockItems = storeItems.filter(item =>
+            error.response.data.error.includes(item.productId.toString())
+          );
+          outOfStockItems.forEach(item => {
+            updateQuantity(item.productId, item.sellerId, item.stock);
+          });
+        }
       }
     
       toast.error(errorMessage, {
@@ -83,13 +87,13 @@ const ShoppingCart: React.FC = () => {
     }
   };
 
-  const groupedItems = groupItemsByStore();
-
   const calculateDeliveryEstimate = () => {
     const today = new Date();
     today.setDate(today.getDate() + 3);
     return today.toLocaleDateString('fa-IR');
   };
+
+  const groupedItems = groupItemsByStore();
 
   return (
     <motion.div
@@ -198,7 +202,7 @@ const ShoppingCart: React.FC = () => {
                               </div>
                             )}
                             <div className="mt-3 text-lg font-bold text-[#1e293b]">
-                              {formatPrice(item.price)} تومان
+                              {item.price} تومان
                             </div>
                           </div>
                           <div className="flex items-center">
@@ -254,7 +258,7 @@ const ShoppingCart: React.FC = () => {
                         <span className="text-gray-700 font-medium">جمع این فروشگاه:</span>
                       </div>
                       <div className="text-xl font-bold text-[#1e40af]">
-                        {formatPrice(storeTotal)} تومان
+                        {storeTotal} تومان
                       </div>
                     </div>
                     
@@ -304,7 +308,7 @@ const ShoppingCart: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">جمع کل:</span>
-                  <span className="font-medium">{formatPrice(totalPrice)} تومان</span>
+                  <span className="font-medium">{totalPrice} تومان</span>
                 </div>
                 <div className="flex justify-between items-center text-green-600">
                   <span>تخفیف:</span>
@@ -312,7 +316,7 @@ const ShoppingCart: React.FC = () => {
                 </div>
                 <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
                   <span className="text-gray-800 font-bold">مبلغ قابل پرداخت:</span>
-                  <span className="text-xl font-bold text-[#1e40af]">{formatPrice(totalPrice)} تومان</span>
+                  <span className="text-xl font-bold text-[#1e40af]">{totalPrice} تومان</span>
                 </div>
               </div>
 

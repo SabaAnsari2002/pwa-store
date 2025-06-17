@@ -28,8 +28,8 @@ import ReviewsPageCustomer from "./pages/customer/ReviewsPage";
 import SupportPageCustomer from "./pages/customer/SupportPage";
 import WalletPageCustomer from "./pages/customer/WalletPage";
 import WishlistPageCustomer from "./pages/customer/WishlistPage";
-import SellerRegister from "./pages/seller/SellerRegister"; // اضافه شده
-import SellerLogin from "./pages/seller/SellerLogin"; // اضافه شده
+import SellerRegister from "./pages/seller/SellerRegister";
+import SellerLogin from "./pages/seller/SellerLogin";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Blog from "./pages/Blog";
@@ -44,14 +44,13 @@ import { WishlistProvider } from './contexts/WishlistContext';
 
 const App: React.FC = () => {
     const [user, setUser] = useState<string | null>(localStorage.getItem("user"));
-    const [isSeller, setIsSeller] = useState<boolean>(localStorage.getItem("isSeller") === "true"); // اضافه شده
+    const [isSeller, setIsSeller] = useState<boolean>(localStorage.getItem("isSeller") === "true");
 
     return (
         <CartProvider>
             <WishlistProvider>
                 <Router>
                     <Routes>
-                        {/* مسیرهای اصلی */}
                         <Route path="/" element={<Home user={user} setUser={setUser} isSeller={isSeller} setIsSeller={setIsSeller} />} />
                         <Route path="/login" element={<Login setUser={setUser} />} />
                         <Route path="/register" element={<Register />} />
@@ -68,11 +67,9 @@ const App: React.FC = () => {
                         <Route path="/products/:id" element={<ProductDetail />} />
                         <Route path="/orders" element={<OrderManagement />} />
                         <Route path="/orders/:id" element={<OrderDetails />} />
-                        {/* مسیرهای جدید فروشنده */}
                         <Route path="/seller-register" element={<SellerRegister setIsSeller={setIsSeller} />} />
                         <Route path="/seller-login" element={<SellerLogin setIsSeller={setIsSeller} />} />
 
-                        {/* مسیرهای پنل فروشنده */}
                         <Route path="/seller-dashboard" element={<SellerDashboard isSeller={isSeller} />}>
                             <Route index element={<DashboardContent />} />
                             <Route path="products" element={<ProductManagement />} />
@@ -85,7 +82,6 @@ const App: React.FC = () => {
                             <Route path="team" element={<TeamManagement />} />
                         </Route>
 
-                        {/* مسیرهای پنل کاربری */}
                         <Route path="/customer-dashboard" element={<CustomerDashboard user={user} />}>
                             <Route index element={<CustomerDashboardContent />} />
                             <Route path="orders" element={<OrdersPageCustomer />} />

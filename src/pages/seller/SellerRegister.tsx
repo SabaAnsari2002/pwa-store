@@ -157,7 +157,7 @@ const SellerRegister: React.FC = () => {
                                             name="shopName"
                                             value={formData.shopName}
                                             onChange={handleChange}
-                                            className={`w-full px-4 py-3 rounded-xl border ${errors.shopName ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-[#2563eb] focus:border-transparent transition-all pr-12`}
+                                            className={`w-full px-4 py-3 rounded-xl border ${errors.shopName ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-[#2563eb] focus:border-transparent transition-all`}
                                             placeholder="مثال: فروشگاه نمونه"
                                         />
                                         {formData.shopName && !errors.shopName && (
@@ -190,7 +190,7 @@ const SellerRegister: React.FC = () => {
                                             name="phone"
                                             value={formData.phone}
                                             onChange={handleChange}
-                                            className={`w-full px-4 py-3 rounded-xl border ${errors.phone ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-[#2563eb] focus:border-transparent transition-all pr-12`}
+                                            className={`w-full px-4 py-3 rounded-xl border ${errors.phone ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-[#2563eb] focus:border-transparent transition-all`}
                                             placeholder="مثال: 09123456789"
                                         />
                                         {formData.phone && !errors.phone && (
@@ -220,7 +220,7 @@ const SellerRegister: React.FC = () => {
                                         name="address"
                                         value={formData.address}
                                         onChange={handleChange}
-                                        className={`w-full px-4 py-3 rounded-xl border ${errors.address ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-[#2563eb] focus:border-transparent transition-all pr-12`}
+                                        className={`w-full px-4 py-3 rounded-xl border ${errors.address ? 'border-red-500' : 'border-gray-300'} focus:ring-2 focus:ring-[#2563eb] focus:border-transparent transition-all`}
                                         placeholder="آدرس کامل فروشگاه"
                                     />
                                     {formData.address && !errors.address && (

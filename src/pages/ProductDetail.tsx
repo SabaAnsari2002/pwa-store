@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getProductById, getSellersByProductId } from "../api/products";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiStar, FiChevronLeft, FiShoppingCart, FiHeart, FiShare2, FiClock, FiCheckCircle } from "react-icons/fi";
+import { FiStar, FiChevronLeft, FiShoppingCart, FiHeart, FiShare2, FiClock, FiCheckCircle, FiThumbsUp, FiThumbsDown, FiUser } from "react-icons/fi";
 import IMG from "../assets/img.jpg";
-import USER from "../assets/user.jpg"
+import USER from "../assets/user.jpg";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useCart } from "../contexts/CartContext";
 import { toast } from "react-toastify";
@@ -65,6 +65,7 @@ const ProductDetail: React.FC = () => {
   const { addToCart, isInCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [stores, setStores] = useState<Seller[]>([]);
+  const [user, setUser] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -73,6 +74,7 @@ const ProductDetail: React.FC = () => {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [notification, setNotification] = useState<{ show: boolean, message: string }>({ show: false, message: '' });
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [isSeller, setIsSeller] = useState(false);
   const [newReview, setNewReview] = useState({
     rating: 5,
     comment: '',
@@ -81,11 +83,18 @@ const ProductDetail: React.FC = () => {
   const [userName, setUserName] = useState('کاربر مهمان');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-
   useEffect(() => {
     const checkLoginStatus = () => {
+      const savedUser = localStorage.getItem("user");
       const token = localStorage.getItem("access_token");
       setIsLoggedIn(!!token);
+      if (token) {
+        if (savedUser) setUser(savedUser);
+        const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
+        setUserName(userData.first_name ? `${userData.first_name} ${userData.last_name}` : userData.username || 'کاربر');
+      } else {
+        setUserName('کاربر مهمان');
+      }
     };
 
     checkLoginStatus();
@@ -96,6 +105,48 @@ const ProductDetail: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const checkIfSeller = async () => {
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        try {
+          const userRes = await fetch("http://localhost:8000/api/sellers/issellers/", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+          const userData = await userRes.json();
+          setIsSeller(userData?.is_seller || false);
+        } catch (err) {
+          console.error("Error checking seller status:", err);
+        }
+      }
+    };
+    checkIfSeller();
+  }, []);
+
+  const fetchComments = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/products/${id}/comments/`);
+      const realReviews = await res.json();
+
+      setReviews(realReviews.map((r: any) => ({
+          id: r.id,
+          user: `${r.user.first_name} ${r.user.last_name}` || r.user.username,
+          rating: r.rating || 4,
+          comment: r.text,
+          date: new Date(r.created_at).toLocaleDateString("fa-IR"),
+          likes: r.likes || 0,
+          dislikes: r.dislikes || 0,
+          avatar: r.user.profile_picture || '',
+      })));
+      setLoading(false);
+    } catch (err) {
+      setError('خطا در دریافت نظرات');
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -107,26 +158,8 @@ const ProductDetail: React.FC = () => {
 
           const sellersData = await getSellersByProductId(parseInt(id));
           setStores(sellersData);
-          
-          const token = localStorage.getItem("access_token");
-          const commentsRes = await fetch(`http://localhost:8000/api/products/${id}/comments/`, {
-              headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-              }
-          });
-          const realReviews = await commentsRes.json();
 
-          setReviews(realReviews.map((r: any) => ({
-              id: r.id,
-              user: `${r.user.first_name} ${r.user.last_name}` || r.user.username,
-              rating: r.rating || 4,
-              comment: r.text,
-              date: new Date(r.created_at).toLocaleDateString("fa-IR"),
-              likes: 0,
-              dislikes: 0,
-              avatar: r.user.profile_picture || '',
-          })));
+          await fetchComments();
         }
       } catch (err) {
         setError("خطا در دریافت اطلاعات محصول");
@@ -146,24 +179,23 @@ const ProductDetail: React.FC = () => {
   }, [product, isInWishlist]);
 
   const handleToggleFavorite = () => {
-  if (!product) return;
+    if (!product) return;
 
-  const favData = {
-    productId: product.id,
-    name: product.name,
-    image: product.images?.[0] || IMG,
-    description: product.description || "",
+    const favData = {
+      productId: product.id,
+      name: product.name,
+      image: product.images?.[0] || IMG,
+      description: product.description || "",
+    };
+
+    if (isFavorite) {
+      removeFromWishlist(product.id);
+      setIsFavorite(false);
+    } else {
+      addToWishlist(favData);
+      setIsFavorite(true);
+    }
   };
-
-  if (isFavorite) {
-    removeFromWishlist(product.id);
-    setIsFavorite(false);
-  } else {
-    addToWishlist(favData);
-    setIsFavorite(true);
-  }
-};
-
 
   useEffect(() => {
     if (notification.show) {
@@ -180,6 +212,11 @@ const ProductDetail: React.FC = () => {
 
   const handleAddToCart = (seller: Seller) => {
     if (!product) return;
+
+    if (isSeller) {
+      toast.error("شما نمی‌توانید محصول خود را سفارش دهید.");
+      return;
+    }
 
     if (isInCart(seller.product_id, seller.seller_id)) {
       toast.info("این محصول قبلاً در سبد خرید شما ثبت شده است", {
@@ -214,12 +251,19 @@ const ProductDetail: React.FC = () => {
     });
   };
 
+
+  const handlelog = () =>{
+    navigate('/login');
+  };
+
+
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem("access_token");
 
     if (!token) {
       toast.error("ابتدا وارد حساب کاربری شوید");
+      navigate('/login');
       return;
     }
 
@@ -241,7 +285,10 @@ const ProductDetail: React.FC = () => {
         }),
       });
 
-      if (!res.ok) throw new Error("خطا در ثبت نظر");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "خطا در ثبت نظر");
+      }
 
       toast.success("نظر با موفقیت ثبت شد");
       const updated = await res.json();
@@ -250,8 +297,8 @@ const ProductDetail: React.FC = () => {
           id: updated.id,
           user: userName,
           rating: newReview.rating,
-          comment: updated.text,
-          date: new Date(updated.created_at).toLocaleDateString("fa-IR"),
+          comment: newReview.comment,
+          date: new Date().toLocaleDateString("fa-IR"),
           likes: 0,
           dislikes: 0,
           avatar: '',
@@ -287,7 +334,6 @@ const ProductDetail: React.FC = () => {
       </div>
     );
   };
-
 
   if (loading) {
     return (
@@ -371,13 +417,14 @@ const ProductDetail: React.FC = () => {
             >
               <span>خانه</span>
             </button>
-            <span className="mx-2 text-gray-400">/</span>
-            <button
+            {user && (<button
               onClick={() => navigate("/shopping-cart")}
               className="hover:text-[#00296B] transition-colors flex items-center"
             >
+              <span className="mx-2 text-gray-400">/</span>
               <span>سبد خرید</span>
             </button>
+            )}
             <span className="mx-2 text-gray-400">/</span>
             <button
               onClick={() => navigate(`/subcategory-products/${encodeURIComponent(product.subcategory)}`)}
@@ -409,12 +456,13 @@ const ProductDetail: React.FC = () => {
                   }}
                 />
                 
-                <button
+                {user && (<button
                   onClick={handleToggleFavorite}
                   className={`absolute top-4 left-4 p-2 rounded-full ${isFavorite ? 'bg-red-100 text-red-500' : 'bg-white text-gray-400'} shadow-md hover:shadow-lg transition-all`}
                 >
                   <FiHeart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
                 </button>
+                )}
               </div>
               
               {product.images && product.images.length > 1 && (
@@ -533,6 +581,7 @@ const ProductDetail: React.FC = () => {
                               placeholder="تجربه خود را از استفاده از این محصول با دیگران به اشتراک بگذارید..."
                               value={newReview.comment}
                               onChange={(e) => setNewReview({...newReview, comment: e.target.value})}
+                              required
                             ></textarea>
                           </div>
 
@@ -546,11 +595,19 @@ const ProductDetail: React.FC = () => {
                             </button>
                           </div>
                         </form>
-                        ) : (
-                          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg">
-                            برای ثبت نظر ابتدا وارد حساب کاربری خود شوید.
-                          </div>
-                        )}
+                      ) : (
+                        <div className="bg-blue-50 border border-blue-200 text-blue-800 p-6 rounded-lg flex flex-col items-center">
+                          <FiUser className="w-10 h-10 mb-4" />
+                          <h4 className="text-lg font-medium mb-2">برای ثبت نظر وارد شوید</h4>
+                          <p className="text-sm mb-4">با ثبت نظر خود به دیگر کاربران کمک کنید</p>
+                          <button 
+                            onClick={() => navigate('/login', { state: { from: location.pathname } })}
+                            className="bg-[#00296B] hover:bg-blue-900 text-white px-6 py-2 rounded-lg"
+                          >
+                            ورود به حساب کاربری
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -576,7 +633,7 @@ const ProductDetail: React.FC = () => {
                             >
                               <div className="flex items-start mb-4">
                                 <img 
-                                  src={review.avatar ||  USER} 
+                                  src={review.avatar || USER} 
                                   alt={review.user}
                                   className="rounded-full w-12 h-12 object-cover ml-4"
                                 />
@@ -592,7 +649,7 @@ const ProductDetail: React.FC = () => {
                               </div>
                               
                               <p className="text-gray-600 leading-relaxed mt-4">{review.comment}</p>
-                              
+
                             </motion.div>
                           ))}
                         </div>
@@ -607,10 +664,23 @@ const ProductDetail: React.FC = () => {
 
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-800">
-              فروشگاه‌های عرضه‌کننده این محصول
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">بهترین قیمت‌ها از معتبرترین فروشگاه‌ها</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  فروشگاه‌های عرضه‌کننده این محصول
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">بهترین قیمت‌ها از معتبرترین فروشگاه‌ها</p>
+              </div>
+
+              {!user && (
+                <button
+                  onClick={handlelog}
+                  className="w-[200px] px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center bg-[#00296B] text-white hover:bg-blue-900"
+                >
+                  ورود به حساب کاربری
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="divide-y divide-gray-200">
@@ -661,27 +731,29 @@ const ProductDetail: React.FC = () => {
                         {formatPrice(seller.price)} تومان
                       </div>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddToCart(seller);
-                      }}
-                      className={`w-[200px] px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center ${
-                        seller.stock > 0
+                    {user && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(seller);
+                        }}
+                        className={`w-[200px] px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center ${
+                          seller.stock > 0
+                            ? isInCart(seller.product_id, seller.seller_id)
+                              ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                              : 'bg-[#00296B] hover:bg-blue-900 text-white'
+                            : 'bg-red-100 text-red-800 cursor-not-allowed'
+                        }`}
+                        disabled={seller.stock <= 0 || isInCart(seller.product_id, seller.seller_id)}
+                      >
+                        <FiShoppingCart className="ml-2" />
+                        {seller.stock > 0 
                           ? isInCart(seller.product_id, seller.seller_id)
-                            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                            : 'bg-[#00296B] hover:bg-blue-900 text-white'
-                          : 'bg-red-100 text-red-800 cursor-not-allowed'
-                      }`}
-                      disabled={seller.stock <= 0 || isInCart(seller.product_id, seller.seller_id)}
-                    >
-                      <FiShoppingCart className="ml-2" />
-                      {seller.stock > 0 
-                        ? isInCart(seller.product_id, seller.seller_id)
-                          ? 'اضافه شده به سبد'
-                          : 'افزودن به سبد'
-                        : 'ناموجود'}
-                    </button>
+                            ? 'اضافه شده به سبد'
+                            : 'افزودن به سبد'
+                          : 'ناموجود'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>

@@ -55,7 +55,7 @@ const Header: React.FC = () => {
     setUser(null);
     setIsSeller(false);
     
-    navigate("/login", { replace: true });
+    navigate("/", { replace: true });
   };
 
   const handleSellerLogout = () => {
@@ -104,9 +104,11 @@ const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4 md:gap-6 relative" ref={dropdownRef}>
-          <a href="/shopping-cart" className="relative group" title="سبد خرید">
-            <FiShoppingCart className="w-6 h-6 text-white group-hover:text-yellow-400 transition-colors" />
-          </a>
+          {user && (
+            <a href="/shopping-cart" className="relative group" title="سبد خرید">
+              <FiShoppingCart className="w-6 h-6 text-white group-hover:text-yellow-400 transition-colors" />
+            </a>
+          )}
 
           {isSeller && (
             <button
