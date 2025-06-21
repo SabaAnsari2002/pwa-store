@@ -39,7 +39,7 @@ const ProductManagement: React.FC = () => {
     const [productToDelete, setProductToDelete] = useState<number | null>(null);
 
     const token = localStorage.getItem("access_token");
-    const refreshToken = localStorage.getItem("refreshToken");
+    const refresh_token = localStorage.getItem("refresh_token");
 
     const topRef = useRef<HTMLDivElement | null>(null);
 
@@ -50,7 +50,7 @@ const ProductManagement: React.FC = () => {
     };
 
     const refreshAccessToken = async () => {
-        if (!refreshToken) {
+        if (!refresh_token) {
             console.error("توکن refresh یافت نشد.");
             return null;
         }
@@ -60,7 +60,7 @@ const ProductManagement: React.FC = () => {
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ refresh: refreshToken }),
+            body: JSON.stringify({ refresh: refresh_token }),
         });
 
         if (response.ok) {

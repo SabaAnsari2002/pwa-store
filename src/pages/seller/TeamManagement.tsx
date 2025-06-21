@@ -1,156 +1,299 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
-// نمونه داده‌های اعضای تیم
-const initialTeamMembers = [
-    { id: 1, name: "علی محمدی", role: "مدیر", email: "ali@example.com", status: "فعال" },
-    { id: 2, name: "فاطمه احمدی", role: "پشتیبان", email: "fatemeh@example.com", status: "فعال" },
-    { id: 3, name: "رضا حسینی", role: "انباردار", email: "reza@example.com", status: "غیرفعال" },
-];
+interface User {
+  id: number;
+  username: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+interface Store {
+  id: number;
+  name: string;
+  address: string;
+}
+
+interface StoreRole {
+  id: number;
+  user: User;
+  store: Store;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+}
 
 const TeamManagement: React.FC = () => {
-    const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
-    const [newMember, setNewMember] = useState({ name: "", role: "", email: "", status: "فعال" });
-    const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+  const [users, setUsers] = useState<User[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [storeRoles, setStoreRoles] = useState<StoreRole[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedStore, setSelectedStore] = useState<string>("");
+  const [newRole, setNewRole] = useState({
+    user: "",
+    role: "cashier",
+  });
 
-    const handleAddMember = () => {
-        if (newMember.name && newMember.role && newMember.email) {
-            const member = { id: teamMembers.length + 1, ...newMember };
-            setTeamMembers([...teamMembers, member]);
-            setNewMember({ name: "", role: "", email: "", status: "فعال" });
-        } else {
-            alert("لطفاً تمام فیلدها را به درستی پر کنید.");
+  const getRoleName = (role: string): string => {
+    const roleNames: Record<string, string> = {
+      cashier: "صندوق دار",
+      warehouse: "انباردار",
+      support: "پشتیبان",
+      manager: "مدیر فروشگاه",
+    };
+    return roleNames[role] || role;
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("access_token");
+        
+        if (!token) {
+          navigate("/login");
+          return;
         }
+
+        const headers = { Authorization: `Bearer ${token}` };
+
+        // دریافت لیست فروشگاه‌های کاربر
+        const storesRes = await axios.get("http://localhost:8000/api/stores/", { headers });
+        setStores(storesRes.data);
+
+        if (storesRes.data.length > 0) {
+          setSelectedStore(storesRes.data[0].id.toString());
+          await fetchStoreRoles(storesRes.data[0].id, headers);
+        }
+
+        // دریافت لیست کاربران قابل اضافه کردن
+        const usersRes = await axios.get(
+          `http://localhost:8000/api/users/search/?store_id=${storesRes.data[0]?.id || ""}`,
+          { headers }
+        );
+        setUsers(usersRes.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("خطا در دریافت داده‌ها");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const filteredMembers = teamMembers.filter((member) =>
-        member.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    fetchData();
+  }, [navigate]);
 
+  const fetchStoreRoles = async (storeId: number, headers: any) => {
+    const rolesRes = await axios.get(
+      `http://localhost:8000/api/store-roles/?store_id=${storeId}`,
+      { headers }
+    );
+    setStoreRoles(rolesRes.data);
+  };
+
+  const handleStoreChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const storeId = e.target.value;
+    setSelectedStore(storeId);
+    
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("access_token");
+      const headers = { Authorization: `Bearer ${token}` };
+
+      await fetchStoreRoles(parseInt(storeId), headers);
+
+      // دریافت کاربران جدید برای این فروشگاه
+      const usersRes = await axios.get(
+        `http://localhost:8000/api/users/search/?store_id=${storeId}`,
+        { headers }
+      );
+      setUsers(usersRes.data);
+    } catch (error) {
+      console.error("Error changing store:", error);
+      toast.error("خطا در تغییر فروشگاه");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddRole = async () => {
+    if (!newRole.user || !selectedStore) {
+      toast.warning("لطفاً کاربر و فروشگاه را انتخاب کنید");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("access_token");
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      };
+
+      const response = await axios.post(
+        `http://localhost:8000/api/store-roles/?store_id=${selectedStore}`,
+        {
+          user: newRole.user,
+          role: newRole.role,
+        },
+        { headers }
+      );
+
+      setStoreRoles([...storeRoles, response.data]);
+      toast.success("نقش با موفقیت اضافه شد");
+
+      // به‌روزرسانی لیست کاربران قابل اضافه کردن
+      const usersRes = await axios.get(
+        `http://localhost:8000/api/users/search/?store_id=${selectedStore}`,
+        { headers }
+      );
+      setUsers(usersRes.data);
+
+      setNewRole({ user: "", role: "cashier" });
+    } catch (error: any) {
+      console.error("Error adding role:", error);
+      toast.error(error.response?.data?.message || "خطا در اضافه کردن نقش");
+    }
+  };
+
+  const handleDeleteRole = async (id: number) => {
+    if (!window.confirm("آیا از حذف این نقش مطمئن هستید؟")) return;
+
+    try {
+      const token = localStorage.getItem("access_token");
+      await axios.delete(`http://localhost:8000/api/store-roles/${id}/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setStoreRoles(storeRoles.filter((role) => role.id !== id));
+      toast.success("نقش با موفقیت حذف شد");
+
+      // به‌روزرسانی لیست کاربران قابل اضافه کردن
+      const usersRes = await axios.get(
+        `http://localhost:8000/api/users/search/?store_id=${selectedStore}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUsers(usersRes.data);
+    } catch (error) {
+      console.error("Error deleting role:", error);
+      toast.error("خطا در حذف نقش");
+    }
+  };
+
+  const toggleActiveStatus = async (id: number, currentStatus: boolean) => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const headers = { Authorization: `Bearer ${token}` };
+
+      await axios.patch(
+        `http://localhost:8000/api/store-roles/${id}/toggle_active/`,
+        {},
+        { headers }
+      );
+
+      setStoreRoles(
+        storeRoles.map((role) =>
+          role.id === id ? { ...role, is_active: !currentStatus } : role
+        )
+      );
+      toast.success(`وضعیت نقش ${!currentStatus ? "فعال" : "غیرفعال"} شد`);
+    } catch (error) {
+      console.error("Error toggling role status:", error);
+      toast.error("خطا در تغییر وضعیت نقش");
+    }
+  };
+
+  if (loading) {
+    return <div>در حال بارگذاری...</div>;
+  }
+
+  if (stores.length === 0) {
     return (
-        <div className="bg-[#F5F5F5] p-6 rounded-lg min-h-screen" style={{ direction: 'rtl' }}>
-            {/* عنوان صفحه */}
-            <div className="mb-8">
-                <h2 className="text-4xl font-bold text-[#00296B] text-center pb-3 relative">
-                    مدیریت تیم فروش
-                    <span className="absolute bottom-0 right-0 left-0 h-1.5 bg-[#FDC500] rounded-full mx-auto w-full max-w-2xl"></span>
-                </h2>
-            </div>
-
-            {/* فرم افزودن عضو جدید */}
-            <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#FDC500] mb-8">
-                <h2 className="text-lg font-semibold text-[#00509D] mb-4">افزودن عضو جدید</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input
-                        type="text"
-                        placeholder="نام"
-                        value={newMember.name}
-                        onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
-                        className="p-2 border rounded focus:ring-2 focus:ring-[#00509D] focus:border-transparent"
-                    />
-                    <input
-                        type="text"
-                        placeholder="نقش"
-                        value={newMember.role}
-                        onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
-                        className="p-2 border rounded focus:ring-2 focus:ring-[#00509D] focus:border-transparent"
-                    />
-                    <input
-                        type="email"
-                        placeholder="ایمیل"
-                        value={newMember.email}
-                        onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                        className="p-2 border rounded focus:ring-2 focus:ring-[#00509D] focus:border-transparent"
-                    />
-                    <select
-                        value={newMember.status}
-                        onChange={(e) => setNewMember({ ...newMember, status: e.target.value })}
-                        className="p-2 border rounded focus:ring-2 focus:ring-[#00509D] focus:border-transparent"
-                    >
-                        <option value="فعال">فعال</option>
-                        <option value="غیرفعال">غیرفعال</option>
-                    </select>
-                </div>
-                <button
-                    onClick={handleAddMember}
-                    className="mt-4 bg-[#00509D] hover:bg-[#003F7D] text-white px-4 py-2 rounded transition duration-300"
-                >
-                    افزودن عضو
-                </button>
-            </div>
-
-            {/* جستجو */}
-            <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#FDC500] mb-8">
-                <h2 className="text-lg font-semibold text-[#00509D] mb-4">جستجوی اعضا</h2>
-                <input
-                    type="text"
-                    placeholder="جستجوی اعضا..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="p-2 border rounded w-full md:w-1/2 focus:ring-2 focus:ring-[#00509D] focus:border-transparent"
-                />
-            </div>
-
-            {/* لیست اعضا */}
-            <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#FDC500]">
-                <h2 className="text-lg font-semibold text-[#00509D] mb-4">لیست اعضا</h2>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white">
-                        <thead>
-                        <tr>
-                            <th className="py-3 px-4 border-b text-[#00509D]">نام</th>
-                            <th className="py-3 px-4 border-b text-[#00509D]">نقش</th>
-                            <th className="py-3 px-4 border-b text-[#00509D]">ایمیل</th>
-                            <th className="py-3 px-4 border-b text-[#00509D]">وضعیت</th>
-                            <th className="py-3 px-4 border-b text-[#00509D]">عملیات</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {filteredMembers.map((member) => (
-                            <tr key={member.id}>
-                                <td className="py-3 px-4 border-b text-[#000000]">{member.name}</td>
-                                <td className="py-3 px-4 border-b text-[#000000]">{member.role}</td>
-                                <td className="py-3 px-4 border-b text-[#000000]">{member.email}</td>
-                                <td className="py-3 px-4 border-b">
-                                    <span
-                                        className={`p-1 rounded border ${
-                                            member.status === "فعال"
-                                                ? "bg-green-100 text-green-800 border-green-300"
-                                                : "bg-red-100 text-red-800 border-red-300"
-                                        }`}
-                                    >
-                                        {member.status}
-                                    </span>
-                                </td>
-                                <td className="py-3 px-4 border-b">
-                                    <button
-                                        onClick={() => alert(`ویرایش عضو ${member.name}`)}
-                                        className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded ml-2 transition duration-300"
-                                    >
-                                        ویرایش
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            const confirmDelete = window.confirm(
-                                                `آیا از حذف عضو ${member.name} مطمئن هستید؟`
-                                            );
-                                            if (confirmDelete) {
-                                                const updatedMembers = teamMembers.filter((m) => m.id !== member.id);
-                                                setTeamMembers(updatedMembers);
-                                            }
-                                        }}
-                                        className="bg-[#D62828] hover:bg-[#B21F1F] text-white px-3 py-1 rounded transition duration-300"
-                                    >
-                                        حذف
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+      <div>
+        <h2>شما هیچ فروشگاهی ندارید</h2>
+        <button onClick={() => navigate("/seller-register")}>ایجاد فروشگاه جدید</button>
+      </div>
     );
+  }
+
+  return (
+    <div>
+      <h1>مدیریت تیم فروشگاه</h1>
+
+      <div>
+        <label>انتخاب فروشگاه:</label>
+        <select value={selectedStore} onChange={handleStoreChange}>
+          {stores.map((store) => (
+            <option key={store.id} value={store.id}>
+              {store.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <h2>افزودن نقش جدید</h2>
+        <select
+          value={newRole.user}
+          onChange={(e) => setNewRole({ ...newRole, user: e.target.value })}
+        >
+          <option value="">انتخاب کاربر</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.username} ({user.first_name} {user.last_name})
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={newRole.role}
+          onChange={(e) => setNewRole({ ...newRole, role: e.target.value })}
+        >
+          <option value="cashier">صندوق دار</option>
+          <option value="warehouse">انباردار</option>
+          <option value="support">پشتیبان</option>
+          <option value="manager">مدیر فروشگاه</option>
+        </select>
+
+        <button onClick={handleAddRole} disabled={!newRole.user}>
+          افزودن نقش
+        </button>
+      </div>
+
+      <div>
+        <h2>نقش‌های فعلی</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>کاربر</th>
+              <th>نقش</th>
+              <th>وضعیت</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {storeRoles.map((role) => (
+              <tr key={role.id}>
+                <td>
+                  {role.user.first_name} {role.user.last_name} ({role.user.username})
+                </td>
+                <td>{getRoleName(role.role)}</td>
+                <td>{role.is_active ? "فعال" : "غیرفعال"}</td>
+                <td>
+                  <button onClick={() => toggleActiveStatus(role.id, role.is_active)}>
+                    {role.is_active ? "غیرفعال کردن" : "فعال کردن"}
+                  </button>
+                  <button onClick={() => handleDeleteRole(role.id)}>حذف</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 };
 
 export default TeamManagement;

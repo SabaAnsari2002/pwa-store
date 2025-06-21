@@ -5,6 +5,7 @@ const Sidebar: React.FC = () => {
     const location = useLocation();
 
     const menuItems = [
+        { to:"/", label:"خانه"},
         { to: "/seller-dashboard", label: "داشبورد" },
         { to: "/seller-dashboard/products", label: "مدیریت محصولات" },
         { to: "/seller-dashboard/orders", label: "مدیریت سفارشات" },
@@ -52,7 +53,3 @@ const Sidebar: React.FC = () => {
 };
 
 export default Sidebar;
-
-////////
-////
-//////

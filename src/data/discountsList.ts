@@ -1,5 +1,3 @@
-// src/data/instantDiscounts.ts
-
 export interface InstantDiscount {
     id: number;
     title: string;

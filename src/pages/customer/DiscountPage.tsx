@@ -10,6 +10,8 @@ interface Discount {
     description: string;
     percentage: number;
     for_first_purchase: boolean;
+    created_at: string;
+    is_active: boolean;
 }
 
 const DiscountPage: React.FC = () => {
@@ -17,6 +19,8 @@ const DiscountPage: React.FC = () => {
     const [instantDiscountsToShow, setInstantDiscountsToShow] = useState<InstantDiscount[]>([]);
     const [remainingTime, setRemainingTime] = useState<string>("2:00:00");
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
 
     const copyToClipboard = (code: string) => {
         navigator.clipboard.writeText(code);
@@ -24,16 +28,46 @@ const DiscountPage: React.FC = () => {
         setTimeout(() => setCopiedCode(null), 2000);
     };
 
+    const calculateRemainingTime = (createdAt: string) => {
+        const createdDate = new Date(createdAt);
+        const expiryDate = new Date(createdDate.getTime() + 2 * 24 * 60 * 60 * 1000);
+        const now = new Date();
+        
+        if (now > expiryDate) {
+            return { text: "منقضی شده", color: "text-red-500 bg-red-50" };
+        }
+        
+        const diff = expiryDate.getTime() - now.getTime();
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        
+        if (days > 0) {
+            return { text: `${days} روز ${hours} ساعت`, color: "text-blue-600 bg-blue-50" };
+        } else if (hours > 0) {
+            return { text: `${hours} ساعت ${minutes} دقیقه`, color: "text-amber-600 bg-amber-50" };
+        } else {
+            return { text: `${minutes} دقیقه`, color: "text-red-500 bg-red-50" };
+        }
+    };
+
     useEffect(() => {
         const fetchDiscounts = async () => {
             const token = localStorage.getItem("access_token");
             try {
+                setLoading(true);
                 const res = await axios.get("http://localhost:8000/api/users/discounts/", {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                setDiscounts(res.data);
+                
+                const validDiscounts = res.data.filter((discount: Discount) => discount.is_active);
+                setDiscounts(validDiscounts);
+                setError(null);
             } catch (err) {
                 console.error("Error fetching discounts", err);
+                setError("خطا در دریافت تخفیف‌ها. لطفا دوباره تلاش کنید.");
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -116,7 +150,6 @@ const DiscountPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Instant Discounts Section */}
                         <div className="bg-white rounded-2xl shadow-sm p-6 border-l-4 border-[#ef4444]">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-bold text-[#1e293b] flex items-center">
@@ -137,7 +170,6 @@ const DiscountPage: React.FC = () => {
                                     >
                                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#ef4444] to-[#fca5a5]"></div>
 
-                                        
                                         <div className="flex items-start justify-between mb-3">
                                             <h3 className="text-lg font-bold text-[#b91c1c] flex items-center">
                                                 <FiPercent className="ml-1" size={18} />
@@ -176,67 +208,87 @@ const DiscountPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* User Discounts Section */}
                         <div className="bg-white rounded-2xl shadow-sm p-6">
                             <h2 className="text-xl font-bold text-[#1e293b] flex items-center mb-6">
                                 <FiAward className="ml-2 text-[#3b82f6]" size={20} />
                                 تخفیف‌های شما
                             </h2>
 
-                            {discounts.length === 0 ? (
+                            {loading ? (
+                                <div className="bg-gray-50 rounded-xl p-8 text-center border border-dashed border-gray-300">
+                                    <div className="animate-pulse flex flex-col items-center">
+                                        <div className="h-8 w-8 bg-gray-300 rounded-full mb-3"></div>
+                                        <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                                        <div className="h-3 bg-gray-300 rounded w-1/2"></div>
+                                    </div>
+                                </div>
+                            ) : error ? (
+                                <div className="bg-gray-50 rounded-xl p-8 text-center border border-dashed border-gray-300">
+                                    <FiAlertCircle className="mx-auto text-red-400 mb-3" size={32} />
+                                    <h4 className="text-red-600 font-medium mb-1">خطا در دریافت داده‌ها</h4>
+                                    <p className="text-gray-500 text-sm">{error}</p>
+                                </div>
+                            ) : discounts.length === 0 ? (
                                 <div className="bg-gray-50 rounded-xl p-8 text-center border border-dashed border-gray-300">
                                     <FiAlertCircle className="mx-auto text-gray-400 mb-3" size={32} />
                                     <h4 className="text-gray-600 font-medium mb-1">تخفیفی یافت نشد</h4>
-                                    <p className="text-gray-500 text-sm">در حال حاضر هیچ کد تخفیفی برای شما وجود ندارد</p>
+                                    <p className="text-gray-500 text-sm">در حال حاضر هیچ کد تخفیف فعالی برای شما وجود ندارد</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {discounts.map((d) => (
-                                        <div
-                                            key={d.id}
-                                            className="bg-gradient-to-br from-white to-[#f0f9ff] p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-[#e0f2fe]"
-                                        >
-                                            <div className="flex items-start justify-between mb-3">
-                                                <h3 className="text-lg font-bold text-[#0369a1] flex items-center">
-                                                    <FiGift className="ml-1" size={18} />
-                                                    {d.title}
-                                                </h3>
-                                                <span className="bg-[#e0f2fe] text-[#0369a1] px-2 py-1 rounded-full text-xs font-bold">
-                                                    {d.percentage}% تخفیف
-                                                </span>
-                                            </div>
-                                            
-                                            <p className="text-gray-700 mb-4 text-sm">{d.description}</p>
-                                            
-                                            <div className="flex items-center justify-between bg-[#f5f5f5] p-2 rounded-lg">
-                                                <span className="font-mono font-bold text-gray-800">{d.code}</span>
-                                                <button
-                                                    onClick={() => copyToClipboard(d.code)}
-                                                    className={`flex items-center text-sm px-3 py-1 rounded-md transition-all ${
-                                                        copiedCode === d.code 
-                                                            ? "bg-green-500 text-white"
-                                                            : "bg-[#3b82f6] text-white hover:bg-[#2563eb]"
-                                                    }`}
-                                                >
-                                                    <FiCopy className="ml-1" size={14} />
-                                                    {copiedCode === d.code ? "کپی شد!" : "کپی"}
-                                                </button>
-                                            </div>
-                                            
-                                            {d.for_first_purchase && (
-                                                <div className="mt-3 flex items-center text-xs text-[#3b82f6]">
-                                                    <FiUser className="ml-1" size={14} />
-                                                    مخصوص اولین خرید
+                                    {discounts.map((d) => {
+                                        const remaining = calculateRemainingTime(d.created_at);
+                                        return (
+                                            <div
+                                                key={d.id}
+                                                className="bg-gradient-to-br from-white to-[#f0f9ff] p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-[#e0f2fe] relative"
+                                            >
+                                                <div className={`absolute top-1 left-3 flex items-center text-xs ${remaining.color} px-2 py-1 rounded-full border ${remaining.text === "منقضی شده" ? "border-red-200" : "border-blue-200"} shadow-sm`}>
+                                                    <FiClock className="ml-1" size={12} />
+                                                    <span>{remaining.text}</span>
                                                 </div>
-                                            )}
-                                        </div>
-                                    ))}
+                                                
+                                                <div className="flex items-start justify-between mb-3 pt-5">
+                                                    <h3 className="text-lg font-bold text-[#0369a1] flex items-center">
+                                                        <FiGift className="ml-1" size={18} />
+                                                        {d.title}
+                                                    </h3>
+                                                    <span className="bg-[#e0f2fe] text-[#0369a1] px-2  py-1 rounded-full text-xs font-bold">
+                                                        {d.percentage}% تخفیف
+                                                    </span>
+                                                </div>
+                                                
+                                                <p className="text-gray-700 mb-4 text-sm">{d.description}</p>
+                                                
+                                                <div className="flex items-center justify-between bg-[#f5f5f5] p-2 rounded-lg">
+                                                    <span className="font-mono font-bold text-gray-800">{d.code}</span>
+                                                    <button
+                                                        onClick={() => copyToClipboard(d.code)}
+                                                        className={`flex items-center text-sm px-3 py-1 rounded-md transition-all ${
+                                                            copiedCode === d.code 
+                                                                ? "bg-green-500 text-white"
+                                                                : "bg-[#3b82f6] text-white hover:bg-[#2563eb]"
+                                                        }`}
+                                                    >
+                                                        <FiCopy className="ml-1" size={14} />
+                                                        {copiedCode === d.code ? "کپی شد!" : "کپی"}
+                                                    </button>
+                                                </div>
+                                                
+                                                {d.for_first_purchase && (
+                                                    <div className="mt-3 flex items-center text-xs text-[#3b82f6]">
+                                                        <FiUser className="ml-1" size={14} />
+                                                        مخصوص اولین خرید
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Sidebar */}
                     <div className="bg-white rounded-2xl shadow-sm p-6 h-fit sticky top-6">
                         <h2 className="text-xl font-bold text-[#1e293b] flex items-center mb-4">
                             <FiGift className="ml-2 text-[#3b82f6]" size={20} />
@@ -256,11 +308,11 @@ const DiscountPage: React.FC = () => {
                                     </li>
                                     <li className="flex items-start">
                                         <span className="text-[#22c55e] mr-2">•</span>
-                                        <span>تخفیف‌های لحظه‌ای هر ۲ ساعت به روز می‌شوند</span>
+                                        <span>تخفیف‌ها به مدت ۲ روز از زمان ایجاد معتبر هستند</span>
                                     </li>
                                     <li className="flex items-start">
                                         <span className="text-[#22c55e] mr-2">•</span>
-                                        <span>تخفیف‌ها روی برخی محصولات اعمال نمی‌شوند</span>
+                                        <span>تخفیف‌های اولین خرید فقط برای حساب‌های جدید اعمال می‌شود</span>
                                     </li>
                                 </ul>
                             </div>
@@ -297,28 +349,6 @@ const DiscountPage: React.FC = () => {
                                     </li>
                                 </ul>
                             </div>
-                        </div>
-
-                        <div className="mt-6 pt-4 border-t border-gray-200">
-                            <h3 className="font-medium text-[#334155] mb-3">چگونه تخفیف بیشتری دریافت کنم؟</h3>
-                            <ul className="text-sm text-[#475569] space-y-2">
-                                <li className="flex items-start">
-                                    <span className="text-[#3b82f6] mr-2">•</span>
-                                    <span>عضویت در برنامه وفاداری</span>
-                                </li>
-                                <li className="flex items-start">
-                                    <span className="text-[#3b82f6] mr-2">•</span>
-                                    <span>دنبال کردن ما در شبکه‌های اجتماعی</span>
-                                </li>
-                                <li className="flex items-start">
-                                    <span className="text-[#3b82f6] mr-2">•</span>
-                                    <span>اشتراک در خبرنامه ایمیلی</span>
-                                </li>
-                                <li className="flex items-start">
-                                    <span className="text-[#3b82f6] mr-2">•</span>
-                                    <span>شرکت در مسابقات و جشنواره‌ها</span>
-                                </li>
-                            </ul>
                         </div>
                     </div>
                 </div>

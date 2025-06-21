@@ -5,6 +5,7 @@ const Sidebar: React.FC = () => {
     const location = useLocation();
 
     const menuItems = [
+        { to:"/", label: "خانه"},
         { to: "/customer-dashboard", label: "داشبورد" },
         { to: "/customer-dashboard/orders", label: "مدیریت سفارشات" },
         { to: "/customer-dashboard/addresses", label: "مدیریت آدرس‌ها" },

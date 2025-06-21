@@ -16,6 +16,7 @@
     "axios": "^1.9.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "gsap": "^3.12.7",
     "jalaali-js": "^1.2.8",
     "lucide-react": "^0.474.0",
