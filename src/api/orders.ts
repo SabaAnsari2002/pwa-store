@@ -46,7 +46,6 @@ export const getOrders = async (): Promise<Order[]> => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching user orders:', error);
     throw error;
   }
 };
@@ -56,7 +55,6 @@ export const getOrderDetails = async (orderId: number): Promise<Order> => {
     const response = await axios.get(`${API_URL}/${orderId}/details/`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching order details:', error);
     throw error;
   }
 };
@@ -74,20 +72,24 @@ export const checkoutOrder = async (items: CheckoutItem[]) => {
   return response.data;
 };
 
+
 export const updateOrderStatus = async (orderId: number, newStatus: string): Promise<void> => {
-  try {
-    await axios.patch(`${API_URL}/${orderId}/update-status/`, { status: newStatus });
-  } catch (error) {
-    console.error('Error updating order status:', error);
-    throw error;
-  }
+  const response = await axios.patch(
+    `${API_URL}/${orderId}/update-status/`,
+    { status: newStatus },
+    {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      }
+    }
+  );
+  return response.data
 };
 
 export const deleteOrder = async (orderId: number): Promise<void> => {
   try {
     await axios.delete(`${API_URL}/${orderId}/`);
   } catch (error) {
-    console.error('Error deleting order:', error);
     throw error;
   }
 };

@@ -25,7 +25,7 @@ const DiscountManagement: React.FC = () => {
     title: "",
     code: "",
     description: "",
-    percentage: 0,
+    percentage: 1,
     is_active: true,
     for_first_purchase: false,
   });
@@ -127,7 +127,7 @@ const DiscountManagement: React.FC = () => {
   }, []);
 
   const handleAddDiscount = async () => {
-    if (!newDiscount.title || !newDiscount.code || !newDiscount.description || newDiscount.percentage <= 0) {
+    if (!newDiscount.title || !newDiscount.code || !newDiscount.description || newDiscount.percentage <= 1) {
       toast.error("لطفاً تمام فیلدهای ضروری را پر کنید");
       return;
     }
@@ -160,7 +160,7 @@ const DiscountManagement: React.FC = () => {
           title: "", 
           code: "", 
           description: "", 
-          percentage: 0, 
+          percentage: 1, 
           is_active: true, 
           for_first_purchase: false 
         });
@@ -235,7 +235,7 @@ const DiscountManagement: React.FC = () => {
   const handleSaveEdit = async () => {
     if (!editDiscountId) return;
 
-    if (!newDiscount.title || !newDiscount.code || !newDiscount.description || newDiscount.percentage <= 0) {
+    if (!newDiscount.title || !newDiscount.code || !newDiscount.description || newDiscount.percentage <= 1) {
       toast.error("لطفاً تمام فیلدهای ضروری را پر کنید");
       return;
     }
@@ -269,7 +269,7 @@ const DiscountManagement: React.FC = () => {
           title: "", 
           code: "", 
           description: "", 
-          percentage: 0, 
+          percentage: 1, 
           is_active: true, 
           for_first_purchase: false 
         });
@@ -293,7 +293,7 @@ const DiscountManagement: React.FC = () => {
       title: "", 
       code: "", 
       description: "", 
-      percentage: 0, 
+      percentage: 1, 
       is_active: true, 
       for_first_purchase: false 
     });
@@ -458,6 +458,7 @@ const DiscountManagement: React.FC = () => {
                     type="number"
                     min="1"
                     max="100"
+                    placeholder="50%"
                     value={newDiscount.percentage}
                     onChange={(e) => {
                       const value = Math.max(1, Math.min(100, +e.target.value));
@@ -487,11 +488,15 @@ const DiscountManagement: React.FC = () => {
             <div className="flex flex-col md:flex-row items-center gap-4">
               <button
                 onClick={editDiscountId ? handleSaveEdit : handleAddDiscount}
-                disabled={loading}
+                disabled={!newDiscount.title || !newDiscount.code || !newDiscount.description || newDiscount.percentage <= 1}
                 className={`px-8 py-3 rounded-lg transition-all duration-300 hover:shadow-lg flex-1 md:flex-none flex items-center justify-center ${
-                  loading 
-                    ? "bg-gray-400 cursor-not-allowed" 
-                    : "bg-gradient-to-r from-[#3b82f6] to-[#1d4ed8] text-white hover:from-[#2563eb] hover:to-[#1e40af]"
+                    editDiscountId 
+                        ? "bg-gradient-to-r from-[#10b981] to-[#059669] text-white hover:from-[#059669] hover:to-[#047857]"
+                        : "bg-gradient-to-r from-[#3b82f6] to-[#1d4ed8] text-white hover:from-[#2563eb] hover:to-[#1e40af]"
+                } ${
+                    (!newDiscount.title || !newDiscount.code || !newDiscount.description || newDiscount.percentage <= 1) 
+                        ? "opacity-50 cursor-not-allowed" 
+                        : ""
                 }`}
               >
                 {loading ? (

@@ -167,7 +167,6 @@ const OrderManagement: React.FC = () => {
   return (
     <div className="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen p-4 md:p-6" style={{ direction: 'rtl' }}>
       <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
@@ -184,7 +183,6 @@ const OrderManagement: React.FC = () => {
           </div>
         </div>
         
-        {/* Filters Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
           <div className="p-4 md:p-6">
             <div className="flex flex-col gap-4">
@@ -223,7 +221,6 @@ const OrderManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Orders List */}
         {loading ? (
           <div className="p-8 text-center">
             <div className="inline-flex items-center justify-center">
@@ -254,7 +251,6 @@ const OrderManagement: React.FC = () => {
                 key={order.id} 
                 className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
               >
-                {/* Order Header */}
                 <div 
                   className="p-4 md:p-6 cursor-pointer transition-colors hover:bg-gray-50"
                   onClick={() => toggleOrderDetails(order.id)}
@@ -324,7 +320,7 @@ const OrderManagement: React.FC = () => {
                           </button>
                         )}
                         
-                        {order.status !== 'cancelled' && (
+                        {order.status !== 'cancelled' && order.status !== 'completed' &&(
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -341,19 +337,13 @@ const OrderManagement: React.FC = () => {
                         )}
                         
                         {order.status === 'completed' && (
-                          <button
+                          <div
                             onClick={(e) => {
                               e.stopPropagation();
                               handleStatusChange(order.id, 'delivered');
                             }}
-                            disabled={processingId === order.id}
-                            className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 shadow-md hover:shadow-lg transition-all
-                              ${processingId === order.id ? 'opacity-70 cursor-not-allowed' : ''}
-                            `}
                           >
-                            <FiTruck className="ml-1" size={16} />
-                            تحویل شد
-                          </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -368,7 +358,6 @@ const OrderManagement: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Order Details */}
                 {expandedOrder === order.id && (
                   <div className="px-4 pb-4 md:px-6 md:pb-6 animate-fade-in">
                     <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">

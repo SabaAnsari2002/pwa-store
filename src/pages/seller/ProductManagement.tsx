@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiX, FiCheck, FiArrowUp } from "react-icons/fi";
+import { 
+  FiPlus, FiEdit2, FiTrash2, FiSearch, 
+  FiX, FiCheck, FiArrowUp, FiChevronDown,
+  FiFilter, FiUpload, FiDownload 
+} from "react-icons/fi";
+import { BsBoxSeam, BsExclamationCircle } from "react-icons/bs";
 import { categories } from "../categoriesData";
+import * as XLSX from 'xlsx';
 
 interface Subcategory {
     id: number;
@@ -37,6 +43,9 @@ const ProductManagement: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
     const [productToDelete, setProductToDelete] = useState<number | null>(null);
+    const [activeTab, setActiveTab] = useState<"all" | "inStock" | "outOfStock">("all");
+    const [sortConfig, setSortConfig] = useState<{key: keyof Product; direction: 'asc' | 'desc'} | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
 
     const token = localStorage.getItem("access_token");
     const refresh_token = localStorage.getItem("refresh_token");
@@ -254,9 +263,52 @@ const ProductManagement: React.FC = () => {
         });
     };
 
-    const filteredProducts = products.filter(product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const sortedProducts = [...products].sort((a, b) => {
+        if (!sortConfig) return 0;
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+            return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+            return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+    });
+
+    const filteredProducts = sortedProducts.filter(product => {
+        const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            product.subcategory.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        if (activeTab === "inStock") return matchesSearch && product.stock > 0;
+        if (activeTab === "outOfStock") return matchesSearch && product.stock === 0;
+        return matchesSearch;
+    });
+
+    const requestSort = (key: keyof Product) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const handleExportExcel = () => {
+        const dataToExport = filteredProducts.map(product => ({
+            'نام محصول': product.name,
+            'دسته‌بندی': product.category,
+            'زیرمجموعه': product.subcategory,
+            'قیمت (تومان)': product.price.toLocaleString(),
+            'موجودی': product.stock > 0 ? `${product.stock} عدد` : 'ناموجود'
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "محصولات");
+        
+        if (!worksheet['!cols']) worksheet['!cols'] = [];
+
+        XLSX.writeFile(workbook, "لیست_محصولات.xlsx", { bookType: 'xlsx'});
+    };
 
     const Loader = () => (
         <div className="flex justify-center items-center py-12">
@@ -274,6 +326,32 @@ const ProductManagement: React.FC = () => {
                 ))}
             </div>
         </div>
+    );
+
+    const ProductStatusBadge = ({ stock }: { stock: number }) => (
+        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+            stock > 10 ? 'bg-green-100 text-green-800' :
+            stock > 0 ? 'bg-yellow-100 text-yellow-800' :
+            'bg-red-100 text-red-800'
+        }`}>
+            {stock > 0 ? `${stock} عدد` : 'ناموجود'}
+        </span>
+    );
+
+    const SortableHeader = ({ label, sortKey }: { label: string; sortKey: keyof Product }) => (
+        <th 
+            className="px-4 py-3 text-right text-xs font-medium text-[#3b82f6] uppercase tracking-wider cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => requestSort(sortKey)}
+        >
+            <div className="flex items-center justify-end">
+                {label}
+                {sortConfig?.key === sortKey && (
+                    <span className="mr-1">
+                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                    </span>
+                )}
+            </div>
+        </th>
     );
 
     return (
@@ -298,15 +376,24 @@ const ProductManagement: React.FC = () => {
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden mb-8">
                     <div className="bg-gradient-to-r from-[#3b82f6] to-[#1d4ed8] p-4 text-white">
                         <h2 className="text-xl font-semibold flex items-center">
-                            <FiPlus className="ml-2" />
-                            {editProductId ? "ویرایش محصول" : "افزودن محصول جدید"}
+                            {editProductId ? (
+                                <>
+                                    <FiEdit2 className="ml-2" />
+                                    ویرایش محصول
+                                </>
+                            ) : (
+                                <>
+                                    <FiPlus className="ml-2" />
+                                    افزودن محصول جدید
+                                </>
+                            )}
                         </h2>
                     </div>
                     
                     <div className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div className="space-y-2">
-                                <label className="block text-[#334155] font-medium">نام محصول</label>
+                                <label className="block text-[#334155] font-medium">نام محصول <span className="text-red-500">*</span></label>
                                 <div className="relative">
                                     <input
                                         type="text"
@@ -314,7 +401,6 @@ const ProductManagement: React.FC = () => {
                                         value={newProduct.name}
                                         onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                                         className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3b82f6] focus:border-transparent transition-all"
-
                                     />
                                     {newProduct.name && (
                                         <FiCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" />
@@ -323,68 +409,68 @@ const ProductManagement: React.FC = () => {
                             </div>
                             
                             <div className="space-y-2">
-                                <label className="block text-[#334155] font-medium">دسته‌بندی</label>
-                                <select
-                                    value={newProduct.category}
-                                    onChange={handleCategoryChange}
-                                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3b82f6] focus:border-transparent transition-all appearance-none bg-white bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM2NDc0OGIiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1jaGV2cm9uLWRvd24iPjxwYXRoIGQ9Im03IDE1IDUgNSA1LTUiLz48L3N2Zz4=')] bg-no-repeat bg-[center_left_1rem]"
-                                >
-                                    <option value="">انتخاب دسته‌بندی</option>
-                                    {categories.map((category) => (
-                                        <option key={category.id} value={category.name}>
-                                            {category.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                <label className="block text-[#334155] font-medium">دسته‌بندی <span className="text-red-500">*</span></label>
+                                <div className="relative">
+                                    <select
+                                        value={newProduct.category}
+                                        onChange={handleCategoryChange}
+                                        className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3b82f6] focus:border-transparent transition-all appearance-none bg-white pr-3"
+                                    >
+                                        <option value="">انتخاب دسته‌بندی</option>
+                                        {categories.map((category) => (
+                                            <option key={category.id} value={category.name}>
+                                                {category.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <FiChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                </div>
                             </div>
                             
                             {selectedCategory && (
                                 <div className="space-y-2">
-                                    <label className="block text-[#334155] font-medium">زیرمجموعه</label>
-                                    <select
-                                        value={newProduct.subcategory}
-                                        onChange={handleSubcategoryChange}
-                                        className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3b82f6] focus:border-transparent transition-all appearance-none bg-white bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM2NDc0OGIiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1jaGV2cm9uLWRvd24iPjxwYXRoIGQ9Im03IDE1IDUgNSA1LTUiLz48L3N2Zz4=')] bg-no-repeat bg-[center_left_1rem]"
-                                    >
-                                        <option value="">انتخاب زیرمجموعه</option>
-                                        {selectedCategory.subcategories.map((subcategory) => (
-                                            <option key={subcategory.id} value={subcategory.name}>
-                                                {subcategory.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <label className="block text-[#334155] font-medium">زیرمجموعه <span className="text-red-500">*</span></label>
+                                    <div className="relative">
+                                        <select
+                                            value={newProduct.subcategory}
+                                            onChange={handleSubcategoryChange}
+                                            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3b82f6] focus:border-transparent transition-all appearance-none bg-white pr-3"
+                                        >
+                                            <option value="">انتخاب زیرمجموعه</option>
+                                            {selectedCategory.subcategories.map((subcategory) => (
+                                                <option key={subcategory.id} value={subcategory.name}>
+                                                    {subcategory.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <FiChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                    </div>
                                 </div>
                             )}
                             
                             <div className="space-y-2">
-                                <label className="block text-[#334155] font-medium">قیمت (تومان)</label>
+                                <label className="block text-[#334155] font-medium">قیمت (تومان) <span className="text-red-500">*</span></label>
                                 <div className="relative">
                                     <input
-                                        type="text"
+                                        type="number"
                                         min="0"
                                         placeholder="قیمت"
-                                        value={newProduct.price}
-                                        onChange={(e) => {
-                                            const value = Math.max(0, +e.target.value);
-                                            setNewProduct({ ...newProduct, price: value });
-                                        }}
-                                        className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3b82f6] focus:border-transparent transition-all"
-
+                                        value={newProduct.price || ""}
+                                        onChange={(e) => setNewProduct({ ...newProduct, price: +e.target.value })}
+                                        className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3b82f6] focus:border-transparent transition-all pl-10"
                                     />
                                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">تومان</span>
                                 </div>
                             </div>
                             
                             <div className="space-y-2">
-                                <label className="block text-[#334155] font-medium">موجودی</label>
+                                <label className="block text-[#334155] font-medium">موجودی <span className="text-red-500">*</span></label>
                                 <input
-                                    type="text"
+                                    type="number"
+                                    min="0"
                                     placeholder="موجودی"
-                                    value={newProduct.stock}
-                                    onChange={(e) => {
-                                        const value = Math.max(0, +e.target.value);
-                                        setNewProduct({ ...newProduct, stock: value });
-                                    }}
+                                    value={newProduct.stock || ""}
+                                    onChange={(e) => setNewProduct({ ...newProduct, stock: +e.target.value })}
                                     className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3b82f6] focus:border-transparent transition-all"
                                 />
                             </div>
@@ -393,7 +479,16 @@ const ProductManagement: React.FC = () => {
                         <div className="flex flex-col md:flex-row items-center gap-4">
                             <button
                                 onClick={editProductId ? handleSaveEdit : handleAddProduct}
-                                className="bg-gradient-to-r from-[#3b82f6] to-[#1d4ed8] text-white px-8 py-3 rounded-lg transition-all duration-300 hover:shadow-lg hover:from-[#2563eb] hover:to-[#1e40af] flex-1 md:flex-none flex items-center justify-center"
+                                disabled={!newProduct.name || !newProduct.category || !newProduct.subcategory || newProduct.price <= 0 || newProduct.stock < 0}
+                                className={`px-8 py-3 rounded-lg transition-all duration-300 hover:shadow-lg flex-1 md:flex-none flex items-center justify-center ${
+                                    editProductId 
+                                        ? "bg-gradient-to-r from-[#10b981] to-[#059669] text-white hover:from-[#059669] hover:to-[#047857]"
+                                        : "bg-gradient-to-r from-[#3b82f6] to-[#1d4ed8] text-white hover:from-[#2563eb] hover:to-[#1e40af]"
+                                } ${
+                                    (!newProduct.name || !newProduct.category || !newProduct.subcategory || newProduct.price <= 0 || newProduct.stock < 0) 
+                                        ? "opacity-50 cursor-not-allowed" 
+                                        : ""
+                                }`}
                             >
                                 {editProductId ? (
                                     <>
@@ -411,7 +506,7 @@ const ProductManagement: React.FC = () => {
                             {editProductId && (
                                 <button
                                     onClick={handleCancelEdit}
-                                    className="bg-gradient-to-r from-[#ef4444] to-[#dc2626] text-white px-8 py-3 rounded-lg transition-all duration-300 hover:shadow-lg hover:from-[#dc2626] hover:to-[#b91c1c] flex-1 md:flex-none flex items-center justify-center"
+                                    className="px-8 py-3 bg-gradient-to-r from-[#ef4444] to-[#dc2626] text-white rounded-lg transition-all duration-300 hover:shadow-lg hover:from-[#dc2626] hover:to-[#b91c1c] flex-1 md:flex-none flex items-center justify-center"
                                 >
                                     <FiX className="ml-2" />
                                     انصراف از ویرایش
@@ -421,33 +516,135 @@ const ProductManagement: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Search Section */}
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6 mb-8">
-                    <h2 className="text-xl font-semibold text-[#1e293b] mb-4 flex items-center">
-                        <FiSearch className="ml-2 text-[#3b82f6]" />
-                        جستجوی محصولات
-                    </h2>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="جستجوی محصولات..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full p-3 pr-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3b82f6] focus:border-transparent transition-all"
-                        />
-                        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="w-full md:w-auto">
+                            <h2 className="text-xl font-semibold text-[#1e293b] mb-2 md:mb-0 flex items-center">
+                                <FiSearch className="ml-2 text-[#3b82f6]" />
+                                جستجوی محصولات
+                            </h2>
+                        </div>
+                        
+                        <div className="w-full md:w-auto flex flex-col md:flex-row gap-3">
+                            <div className="relative flex-1">
+                                <input
+                                    type="text"
+                                    placeholder="جستجوی محصولات..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full p-3 pr-12 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3b82f6] focus:border-transparent transition-all"
+                                />
+                                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                            </div>
+                            
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                    <FiFilter className="text-[#3b82f6]" />
+                                    <span>فیلترها</span>
+                                </button>
+                                
+                                {showFilters && (
+                                    <div className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-10 p-4">
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">وضعیت موجودی</label>
+                                                <select 
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#3b82f6] focus:border-[#3b82f6]"
+                                                    value={activeTab}
+                                                    onChange={(e) => setActiveTab(e.target.value as "all" | "inStock" | "outOfStock")}
+                                                >
+                                                    <option value="all">همه محصولات</option>
+                                                    <option value="inStock">فقط موجود</option>
+                                                    <option value="outOfStock">فقط ناموجود</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">دسته‌بندی</label>
+                                                <select 
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#3b82f6] focus:border-[#3b82f6]"
+                                                >
+                                                    <option value="">همه دسته‌بندی‌ها</option>
+                                                    {categories.map(category => (
+                                                        <option key={category.id} value={category.name}>{category.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex border-b border-gray-200 mt-6">
+                        <button
+                            className={`py-2 px-4 font-medium text-sm flex items-center border-b-2 transition-colors ${
+                                activeTab === "all" 
+                                    ? "border-[#3b82f6] text-[#3b82f6]" 
+                                    : "border-transparent text-gray-500 hover:text-gray-700"
+                            }`}
+                            onClick={() => setActiveTab("all")}
+                        >
+                            همه محصولات
+                            <span className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs font-medium mr-2">
+                                {products.length}
+                            </span>
+                        </button>
+                        
+                        <button
+                            className={`py-2 px-4 font-medium text-sm flex items-center border-b-2 transition-colors ${
+                                activeTab === "inStock" 
+                                    ? "border-[#10b981] text-[#10b981]" 
+                                    : "border-transparent text-gray-500 hover:text-gray-700"
+                            }`}
+                            onClick={() => setActiveTab("inStock")}
+                        >
+                            موجود در انبار
+                            <span className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs font-medium mr-2">
+                                {products.filter(p => p.stock > 0).length}
+                            </span>
+                        </button>
+                        
+                        <button
+                            className={`py-2 px-4 font-medium text-sm flex items-center border-b-2 transition-colors ${
+                                activeTab === "outOfStock" 
+                                    ? "border-[#ef4444] text-[#ef4444]" 
+                                    : "border-transparent text-gray-500 hover:text-gray-700"
+                            }`}
+                            onClick={() => setActiveTab("outOfStock")}
+                        >
+                            ناموجود
+                            <span className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs font-medium mr-2">
+                                {products.filter(p => p.stock === 0).length}
+                            </span>
+                        </button>
                     </div>
                 </div>
 
-                {/* Products List */}
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden">
                     <div className="bg-gradient-to-r from-[#3b82f6] to-[#1d4ed8] p-4 text-white">
-                        <h2 className="text-xl font-semibold flex items-center">
-                            لیست محصولات
-                            <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium mr-3">
-                                {filteredProducts.length} محصول
-                            </span>
-                        </h2>
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                            <h2 className="text-xl font-semibold flex items-center">
+                                لیست محصولات
+                                <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium mr-3">
+                                    {filteredProducts.length} محصول
+                                </span>
+                            </h2>
+                            
+                            <div className="mt-2 md:mt-0 flex items-center gap-2">
+                                <button 
+                                    onClick={handleExportExcel}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-white/10 rounded-lg text-sm hover:bg-white/20 transition-colors"
+                                >
+                                    <FiDownload size={14} />
+                                    خروجی Excel
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     
                     <div className="p-6">
@@ -456,33 +653,35 @@ const ProductManagement: React.FC = () => {
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
-                                    <thead>
+                                    <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-[#3b82f6] uppercase tracking-wider">نام محصول</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-[#3b82f6] uppercase tracking-wider">دسته‌بندی</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-[#3b82f6] uppercase tracking-wider">زیرمجموعه</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-[#3b82f6] uppercase tracking-wider">قیمت</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-[#3b82f6] uppercase tracking-wider">موجودی</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-[#3b82f6] uppercase tracking-wider">عملیات</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">نام محصول</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">دسته بندی</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">زیر مجموعه</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">قیمت (تومان)</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">موجودی</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عملیات</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {filteredProducts.map((product) => (
                                             <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#1e293b]">{product.name}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#475569]">
-                                                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-medium text-[#1e293b]">{product.name}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                                                         {product.category}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#475569]">{product.subcategory}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#475569]">
+                                                    {product.subcategory}
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#1e293b]">
                                                     {product.price.toLocaleString()} تومان
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                        {product.stock > 0 ? `${product.stock} عدد` : 'ناموجود'}
-                                                    </span>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <ProductStatusBadge stock={product.stock} />
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-[#475569]">
                                                     <div className="flex items-center space-x-2 space-x-reverse">
@@ -517,10 +716,18 @@ const ProductManagement: React.FC = () => {
                                 {filteredProducts.length === 0 && !loading && (
                                     <div className="text-center py-12">
                                         <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                            <FiSearch size={32} className="text-gray-400" />
+                                            <BsExclamationCircle size={32} className="text-gray-400" />
                                         </div>
                                         <h3 className="text-lg font-medium text-[#334155]">محصولی یافت نشد</h3>
-                                        <p className="text-[#64748b] mt-1">هیچ محصولی با معیارهای جستجوی شما مطابقت ندارد</p>
+                                        <p className="text-[#64748b] mt-1">
+                                            {searchQuery 
+                                                ? "هیچ محصولی با معیارهای جستجوی شما مطابقت ندارد" 
+                                                : activeTab === "inStock" 
+                                                    ? "هیچ محصول موجودی در انبار وجود ندارد" 
+                                                    : activeTab === "outOfStock" 
+                                                        ? "همه محصولات موجود هستند" 
+                                                        : "هنوز محصولی اضافه نشده است"}
+                                        </p>
                                     </div>
                                 )}
                             </div>
@@ -529,7 +736,6 @@ const ProductManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-xl overflow-hidden w-full max-w-md">
