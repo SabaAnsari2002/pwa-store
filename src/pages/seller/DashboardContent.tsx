@@ -211,9 +211,6 @@ const ProfessionalDashboard: React.FC = () => {
   }, []);
 
 
-  console.log(products);
-
-
   return (
     <div className="bg-gray-50 min-h-screen p-4 md:p-6" style={{ direction: 'rtl' }}>
       <div className="max-w-7xl mx-auto">

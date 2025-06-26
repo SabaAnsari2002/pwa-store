@@ -4,12 +4,19 @@ import { toast } from 'react-toastify';
 import IMG from '../../assets/img.jpg';
 import { FiPackage, FiTruck, FiCheckCircle, FiXCircle, FiRefreshCw, FiChevronDown, FiChevronUp, FiShoppingBag, FiDollarSign, FiCalendar, FiUser } from 'react-icons/fi';
 
+interface Sellers {
+  shop_name: string;
+  seller_id: number;
+  product_id:number;
+}
+
 interface OrderItem {
   id: number;
   product: {
     id: number;
     name: string;
     image?: string;
+    sellers?: Sellers[];
   };
   quantity: number;
   price: number;
@@ -38,6 +45,8 @@ const OrderManagement: React.FC = () => {
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
+  const uuid_user = orders.map((m)=> m.items.map((i)=> i.product.sellers?.map((s)=>s.seller_id)));
+
 
   useEffect(() => {
     const fetchOrders = async () => {

@@ -44,9 +44,6 @@ const NotificationsPage: React.FC = () => {
     });
   };
 
-  const markAsRead = (id) => {
-    console.log(`Notification ${id} marked as read`);
-  };
 
   const filteredNotifications = activeTab === "all" 
     ? notifications 

@@ -56,7 +56,7 @@ const DiscountPage: React.FC = () => {
             const token = localStorage.getItem("access_token");
             try {
                 setLoading(true);
-                const res = await axios.get("http://localhost:8000/api/users/discounts/", {
+                const res = await axios.get("http://localhost:8000/api/users/discount/", {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 

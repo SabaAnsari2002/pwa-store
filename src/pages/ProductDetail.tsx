@@ -46,6 +46,13 @@ interface Seller {
   logo?: string;
   discount?: number;
   product_id: number;
+  seller:{
+    id: number;
+    logo: string;
+    address: string;
+    description: string;
+    phone: string;
+  };
 }
 
 interface Review {
@@ -82,6 +89,10 @@ const ProductDetail: React.FC = () => {
   });
   const [userName, setUserName] = useState('کاربر مهمان');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const findStoreBySellerId = (sellerId: number) => {
+    return stores.find(store => store.seller.id === sellerId)?.seller;
+  };
 
   useEffect(() => {
     const checkLoginStatus = () => {
@@ -694,14 +705,14 @@ const ProductDetail: React.FC = () => {
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center flex-1">
-                    <img
-                      src={seller.logo || IMG}
-                      alt={seller.shop_name}
-                      className="w-16 h-16 object-contain rounded-lg border border-gray-200 ml-4"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = IMG;
-                      }}
-                    />
+                      <img
+                        src={findStoreBySellerId(seller.seller_id)?.logo || IMG}
+                        alt={seller.shop_name}
+                        className="w-16 h-16 object-contain rounded-lg border border-gray-200 ml-4"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = IMG;
+                        }}
+                      />
                     <div>
                       <h3 className="font-semibold text-gray-800">{seller.shop_name}</h3>
                       <div className="flex items-center mt-1">

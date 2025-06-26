@@ -61,7 +61,6 @@ const SupportPage: React.FC = () => {
     const addLog = (message: string) => {
         const timestamp = new Date().toLocaleTimeString('fa-IR');
         setLogs(prev => [`[${timestamp}] ${message}`, ...prev].slice(0, 10));
-        console.log(`[SupportPage] ${message}`);
     };
 
     const fetchTickets = async () => {

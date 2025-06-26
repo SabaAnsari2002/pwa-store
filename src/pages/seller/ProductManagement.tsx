@@ -297,7 +297,7 @@ const ProductManagement: React.FC = () => {
             'نام محصول': product.name,
             'دسته‌بندی': product.category,
             'زیرمجموعه': product.subcategory,
-            'قیمت (تومان)': product.price.toLocaleString(),
+            'قیمت (تومان)': product.price,
             'موجودی': product.stock > 0 ? `${product.stock} عدد` : 'ناموجود'
         }));
 
@@ -678,7 +678,7 @@ const ProductManagement: React.FC = () => {
                                                     {product.subcategory}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#1e293b]">
-                                                    {product.price.toLocaleString()} تومان
+                                                    {product.price} تومان
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <ProductStatusBadge stock={product.stock} />
