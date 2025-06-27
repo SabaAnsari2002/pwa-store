@@ -127,6 +127,9 @@ const ProductManagement: React.FC = () => {
         fetchProducts();
     }, []);
 
+
+
+
     const handleAddProduct = async () => {
         const cleanedProduct = {
             ...newProduct,

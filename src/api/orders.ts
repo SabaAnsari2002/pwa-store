@@ -59,16 +59,20 @@ export const getOrderDetails = async (orderId: number): Promise<Order> => {
   }
 };
 
-export const checkoutOrder = async (items: CheckoutItem[]) => {
-  const response = await axios.post(
-    `${API_URL}/checkout/`,
-    { items },
-    {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-      }
+export const checkoutOrder = async (items: Array<{
+  product_id: number;
+  seller_id: number;
+  quantity: number;
+  discount_code?: string | null;
+}>) => {
+  const response = await axios.post(`${API_URL}/checkout/`, {
+    items,
+    discount_code: items[0]?.discount_code || null
+  }, {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('access_token')}`
     }
-  );
+  });
   return response.data;
 };
 

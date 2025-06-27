@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { instantDiscounts, InstantDiscount } from "../../data/discountsList";
-import { FiClock, FiCopy, FiGift, FiPercent, FiAward, FiUser, FiAlertCircle } from "react-icons/fi";
+import { FiClock, FiCopy, FiGift, FiPercent, FiAward, FiUser, FiAlertCircle, FiCalendar, FiCheck, FiX } from "react-icons/fi";
 
 interface Discount {
     id: number;
@@ -10,8 +10,16 @@ interface Discount {
     description: string;
     percentage: number;
     for_first_purchase: boolean;
-    created_at: string;
+    is_single_use: boolean;
+    min_order_amount: number;
+    valid_from: string;
+    valid_to: string;
     is_active: boolean;
+    is_valid: boolean;
+    remaining_time: string;
+    seller?: number;
+    seller_name?: string;
+    shop_name?: string;
 }
 
 const DiscountPage: React.FC = () => {
@@ -28,27 +36,31 @@ const DiscountPage: React.FC = () => {
         setTimeout(() => setCopiedCode(null), 2000);
     };
 
-    const calculateRemainingTime = (createdAt: string) => {
-        const createdDate = new Date(createdAt);
-        const expiryDate = new Date(createdDate.getTime() + 2 * 24 * 60 * 60 * 1000);
-        const now = new Date();
-        
-        if (now > expiryDate) {
-            return { text: "منقضی شده", color: "text-red-500 bg-red-50" };
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fa-IR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const getDiscountStatus = (discount: Discount) => {
+        if (!discount.is_active) {
+            return { text: "غیرفعال", color: "text-gray-500 bg-gray-50", border: "border-gray-200" };
         }
         
-        const diff = expiryDate.getTime() - now.getTime();
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        
-        if (days > 0) {
-            return { text: `${days} روز ${hours} ساعت`, color: "text-blue-600 bg-blue-50" };
-        } else if (hours > 0) {
-            return { text: `${hours} ساعت ${minutes} دقیقه`, color: "text-amber-600 bg-amber-50" };
-        } else {
-            return { text: `${minutes} دقیقه`, color: "text-red-500 bg-red-50" };
+        if (!discount.is_valid) {
+            return { text: "منقضی شده", color: "text-red-500 bg-red-50", border: "border-red-200" };
         }
+
+        if (new Date(discount.valid_to) < new Date()) {
+            return { text: "پایان یافته", color: "text-amber-500 bg-amber-50", border: "border-amber-200" };
+        }
+
+        return { text: "فعال", color: "text-green-500 bg-green-50", border: "border-green-200" };
     };
 
     useEffect(() => {
@@ -56,12 +68,11 @@ const DiscountPage: React.FC = () => {
             const token = localStorage.getItem("access_token");
             try {
                 setLoading(true);
-                const res = await axios.get("http://localhost:8000/api/users/discount/", {
+                const res = await axios.get("http://localhost:8000/api/discounts/", {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 
-                const validDiscounts = res.data.filter((discount: Discount) => discount.is_active);
-                setDiscounts(validDiscounts);
+                setDiscounts(res.data);
                 setError(null);
             } catch (err) {
                 console.error("Error fetching discounts", err);
@@ -237,15 +248,28 @@ const DiscountPage: React.FC = () => {
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {discounts.map((d) => {
-                                        const remaining = calculateRemainingTime(d.created_at);
+                                        const status = getDiscountStatus(d);
                                         return (
                                             <div
                                                 key={d.id}
-                                                className="bg-gradient-to-br from-white to-[#f0f9ff] p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-[#e0f2fe] relative"
+                                                className={`bg-gradient-to-br from-white to-[#f0f9ff] p-5 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border ${status.border} relative`}
                                             >
-                                                <div className={`absolute top-1 left-3 flex items-center text-xs ${remaining.color} px-2 py-1 rounded-full border ${remaining.text === "منقضی شده" ? "border-red-200" : "border-blue-200"} shadow-sm`}>
-                                                    <FiClock className="ml-1" size={12} />
-                                                    <span>{remaining.text}</span>
+                                                {d.seller && (
+                                                    <div className="absolute top-1 right-3 flex items-center text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full border border-purple-200 shadow-sm">
+                                                        <FiUser className="ml-1" size={12} />
+                                                        <span>{d.shop_name || d.seller_name || "فروشنده"}</span>
+                                                    </div>
+                                                )}
+                                                
+                                                <div className={`absolute top-1 left-3 flex items-center text-xs ${status.color} px-2 py-1 rounded-full border ${status.border} shadow-sm`}>
+                                                    {status.text === "فعال" ? (
+                                                        <FiCheck className="ml-1" size={12} />
+                                                    ) : status.text === "منقضی شده" ? (
+                                                        <FiX className="ml-1" size={12} />
+                                                    ) : (
+                                                        <FiClock className="ml-1" size={12} />
+                                                    )}
+                                                    <span>{status.text}</span>
                                                 </div>
                                                 
                                                 <div className="flex items-start justify-between mb-3 pt-5">
@@ -253,7 +277,7 @@ const DiscountPage: React.FC = () => {
                                                         <FiGift className="ml-1" size={18} />
                                                         {d.title}
                                                     </h3>
-                                                    <span className="bg-[#e0f2fe] text-[#0369a1] px-2  py-1 rounded-full text-xs font-bold">
+                                                    <span className="bg-[#e0f2fe] text-[#0369a1] px-2 py-1 rounded-full text-xs font-bold">
                                                         {d.percentage}% تخفیف
                                                     </span>
                                                 </div>
@@ -275,12 +299,34 @@ const DiscountPage: React.FC = () => {
                                                     </button>
                                                 </div>
                                                 
-                                                {d.for_first_purchase && (
-                                                    <div className="mt-3 flex items-center text-xs text-[#3b82f6]">
-                                                        <FiUser className="ml-1" size={14} />
-                                                        مخصوص اولین خرید
+                                                <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                                                    <div className="flex items-center text-gray-500">
+                                                        <FiCalendar className="ml-1" size={12} />
+                                                        <span>شروع: {formatDate(d.valid_from)}</span>
                                                     </div>
-                                                )}
+                                                    <div className="flex items-center text-gray-500">
+                                                        <FiCalendar className="ml-1" size={12} />
+                                                        <span>پایان: {formatDate(d.valid_to)}</span>
+                                                    </div>
+                                                    <div className="flex items-center text-gray-500">
+                                                        <FiClock className="ml-1" size={12} />
+                                                        <span>مانده: {d.remaining_time}</span>
+                                                    </div>
+                                                    {d.min_order_amount > 0 && (
+                                                        <div className="flex items-center text-gray-500">
+                                                            <span>حداقل خرید: {d.min_order_amount.toLocaleString()} تومان</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {d.for_first_purchase && (
+                                                        <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full flex items-center">
+                                                            <FiUser className="ml-1" size={12} />
+                                                            اولین خرید
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -304,11 +350,11 @@ const DiscountPage: React.FC = () => {
                                 <ul className="text-sm text-[#166534] space-y-2">
                                     <li className="flex items-start">
                                         <span className="text-[#22c55e] mr-2">•</span>
-                                        <span>هر کد تخفیف فقط یک بار قابل استفاده است</span>
+                                        <span>تخفیف‌ها در تاریخ مشخص شده معتبر هستند</span>
                                     </li>
                                     <li className="flex items-start">
                                         <span className="text-[#22c55e] mr-2">•</span>
-                                        <span>تخفیف‌ها به مدت ۲ روز از زمان ایجاد معتبر هستند</span>
+                                        <span>تخفیف‌های یکبار مصرف فقط برای یک سفارش قابل استفاده هستند</span>
                                     </li>
                                     <li className="flex items-start">
                                         <span className="text-[#22c55e] mr-2">•</span>
@@ -345,7 +391,7 @@ const DiscountPage: React.FC = () => {
                                     </li>
                                     <li className="flex items-start">
                                         <span className="mr-2">•</span>
-                                        <span>تخفیف‌های اولین خرید فقط برای حساب‌های جدید اعمال می‌شود</span>
+                                        <span>تخفیف‌های فروشگاهی فقط برای همان فروشگاه معتبر هستند</span>
                                     </li>
                                 </ul>
                             </div>

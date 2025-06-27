@@ -2,12 +2,28 @@ import React, { useEffect, useState } from 'react';
 import { getOrders, updateOrderStatus } from '../../api/orders';
 import { toast } from 'react-toastify';
 import IMG from '../../assets/img.jpg';
-import { FiPackage, FiTruck, FiCheckCircle, FiXCircle, FiRefreshCw, FiChevronDown, FiChevronUp, FiShoppingBag, FiDollarSign, FiCalendar, FiUser } from 'react-icons/fi';
+import { 
+  FiPackage, 
+  FiTruck, 
+  FiCheckCircle, 
+  FiXCircle, 
+  FiRefreshCw, 
+  FiChevronDown, 
+  FiChevronUp, 
+  FiShoppingBag, 
+  FiDollarSign, 
+  FiCalendar, 
+  FiUser,
+  FiPercent,
+  FiTag,
+  FiCreditCard,
+  FiBox
+} from 'react-icons/fi';
 
 interface Sellers {
   shop_name: string;
   seller_id: number;
-  product_id:number;
+  product_id: number;
 }
 
 interface OrderItem {
@@ -26,6 +42,12 @@ interface OrderItem {
   };
 }
 
+interface Discount {
+  id: number;
+  percentage: number;
+  code: string;
+}
+
 interface Order {
   id: number;
   user: {
@@ -34,8 +56,12 @@ interface Order {
   };
   items: OrderItem[];
   total_price: number;
+  original_price: number;
   status: 'pending' | 'completed' | 'cancelled' | 'refunded' | 'delivered';
   created_at: string;
+  discount?: Discount;
+  discount_percentage?: number;
+  discount_code?: string;
 }
 
 const OrderManagement: React.FC = () => {
@@ -45,8 +71,6 @@ const OrderManagement: React.FC = () => {
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
-  const uuid_user = orders.map((m)=> m.items.map((i)=> i.product.sellers?.map((s)=>s.seller_id)));
-
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -85,8 +109,8 @@ const OrderManagement: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (orderId: number, newStatus: 'cancelled' | 'delivered') => {
-    if (!window.confirm(`آیا از تغییر وضعیت سفارش به ${newStatus === 'cancelled' ? 'لغو شده' : 'تحویل داده شده'} مطمئن هستید؟`)) return;
+  const handleStatusChange = async (orderId: number, newStatus: 'cancelled' | 'delivered' | 'refunded') => {
+    if (!window.confirm(`آیا از تغییر وضعیت سفارش به ${newStatus === 'cancelled' ? 'لغو شده' : newStatus === 'delivered' ? 'تحویل داده شده' : 'مرجوعی'} مطمئن هستید؟`)) return;
     
     setProcessingId(orderId);
     try {
@@ -127,6 +151,8 @@ const OrderManagement: React.FC = () => {
         return <FiXCircle className="ml-1" size={16} />;
       case 'delivered':
         return <FiTruck className="ml-1" size={16} />;
+      case 'refunded':
+        return <FiBox className="ml-1" size={16} />;
       default:
         return <FiPackage className="ml-1" size={16} />;
     }
@@ -255,165 +281,302 @@ const OrderManagement: React.FC = () => {
           </div>
         ) : (
           <div className="grid gap-5">
-            {filteredOrders.map((order) => (
-              <div 
-                key={order.id} 
-                className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-              >
+            {filteredOrders.map((order) => {
+              const hasDiscount = order.discount_percentage && order.discount_percentage > 0;
+              const discountAmount = hasDiscount ? order.original_price - order.total_price : 0;
+              
+              return (
                 <div 
-                  className="p-4 md:p-6 cursor-pointer transition-colors hover:bg-gray-50"
-                  onClick={() => toggleOrderDetails(order.id)}
+                  key={order.id} 
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
                 >
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-lg ${getStatusColor(order.status)}`}>
-                        {getStatusIcon(order.status)}
+                  <div 
+                    className="p-4 md:p-6 cursor-pointer transition-colors hover:bg-gray-50"
+                    onClick={() => toggleOrderDetails(order.id)}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div className="flex items-start gap-4">
+                        <div className={`p-3 rounded-lg ${getStatusColor(order.status)}`}>
+                          {getStatusIcon(order.status)}
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-800 flex items-center">
+                            سفارش #{order.id}
+                            <span className={`ml-3 px-2 py-1 text-xs rounded-full ${getStatusColor(order.status)}`}>
+                              {getStatusText(order.status)}
+                            </span>
+                          </h3>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                            <p className="text-sm text-gray-500 flex items-center">
+                              <FiUser className="ml-1" size={14} />
+                              {order.user.username}
+                            </p>
+                            <p className="text-sm text-gray-500 flex items-center">
+                              <FiCalendar className="ml-1" size={14} />
+                              {formatDate(order.created_at)}
+                            </p>
+                            <p className="text-sm text-gray-500 flex items-center">
+                              <FiShoppingBag className="ml-1" size={14} />
+                              {order.items.length} آیتم
+                            </p>
+                            {hasDiscount && (
+                              <p className="text-sm text-green-600 flex items-center">
+                                <FiPercent className="ml-1" size={14} />
+                                تخفیف {order.discount_percentage}%
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-medium text-gray-800 flex items-center">
-                          سفارش #{order.id}
-                          <span className={`ml-3 px-2 py-1 text-xs rounded-full ${getStatusColor(order.status)}`}>
-                            {getStatusText(order.status)}
+                      
+                      <div className="flex flex-col md:items-end gap-3">
+                        <div className="flex flex-col items-end">
+                          {hasDiscount && (
+                            <span className="text-sm text-gray-500 line-through">
+                              {order.original_price.toLocaleString('fa-IR')} تومان
+                            </span>
+                          )}
+                          <span className="font-bold text-gray-800 text-lg">
+                            {order.total_price.toLocaleString('fa-IR')} تومان
                           </span>
-                        </h3>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-                          <p className="text-sm text-gray-500 flex items-center">
-                            <FiUser className="ml-1" size={14} />
-                            {order.user.username}
-                          </p>
-                          <p className="text-sm text-gray-500 flex items-center">
-                            <FiCalendar className="ml-1" size={14} />
-                            {formatDate(order.created_at)}
-                          </p>
-                          <p className="text-sm text-gray-500 flex items-center">
-                            <FiShoppingBag className="ml-1" size={14} />
-                            {order.items.length} آیتم
-                          </p>
+                          {hasDiscount && (
+                            <span className="text-xs text-green-600 mt-1">
+                              صرفه‌جویی: {discountAmount.toLocaleString('fa-IR')} تومان
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2">
+                          {order.status === 'pending' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCheckout(order);
+                              }}
+                              disabled={processingId === order.id}
+                              className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg transition-all
+                                ${processingId === order.id ? 'opacity-70 cursor-not-allowed' : ''}
+                              `}
+                            >
+                              {processingId === order.id ? (
+                                <>
+                                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  در حال پردازش
+                                </>
+                              ) : (
+                                <>
+                                  <FiDollarSign className="ml-1" size={16} />
+                                  تسویه حساب
+                                </>
+                              )}
+                            </button>
+                          )}
+                          
+                          {order.status !== 'cancelled' && order.status !== 'completed' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(order.id, 'cancelled');
+                              }}
+                              disabled={processingId === order.id}
+                              className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all
+                                ${processingId === order.id ? 'opacity-70 cursor-not-allowed' : ''}
+                              `}
+                            >
+                              <FiXCircle className="ml-1" size={16} />
+                              لغو سفارش
+                            </button>
+                          )}
+                          
+                          {order.status === 'completed' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(order.id, 'delivered');
+                              }}
+                              disabled={processingId === order.id}
+                              className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 shadow-md hover:shadow-lg transition-all
+                                ${processingId === order.id ? 'opacity-70 cursor-not-allowed' : ''}
+                              `}
+                            >
+                              <FiTruck className="ml-1" size={16} />
+                              تحویل داده شد
+                            </button>
+                          )}
+                          
+                          {order.status === 'delivered' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStatusChange(order.id, 'refunded');
+                              }}
+                              disabled={processingId === order.id}
+                              className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all
+                                ${processingId === order.id ? 'opacity-70 cursor-not-allowed' : ''}
+                              `}
+                            >
+                              <FiBox className="ml-1" size={16} />
+                              ثبت مرجوعی
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex flex-col md:items-end gap-3">
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-gray-800 text-lg">
-                          {order.total_price.toLocaleString('fa-IR')} تومان
-                        </span>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2">
-                        {order.status === 'pending' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCheckout(order);
-                            }}
-                            disabled={processingId === order.id}
-                            className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg transition-all
-                              ${processingId === order.id ? 'opacity-70 cursor-not-allowed' : ''}
-                            `}
-                          >
-                            {processingId === order.id ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                در حال پردازش
-                              </>
-                            ) : (
-                              <>
-                                <FiDollarSign className="ml-1" size={16} />
-                                تسویه حساب
-                              </>
-                            )}
-                          </button>
-                        )}
-                        
-                        {order.status !== 'cancelled' && order.status !== 'completed' &&(
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStatusChange(order.id, 'cancelled');
-                            }}
-                            disabled={processingId === order.id}
-                            className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all
-                              ${processingId === order.id ? 'opacity-70 cursor-not-allowed' : ''}
-                            `}
-                          >
-                            <FiXCircle className="ml-1" size={16} />
-                            لغو سفارش
-                          </button>
-                        )}
-                        
-                        {order.status === 'completed' && (
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStatusChange(order.id, 'delivered');
-                            }}
-                          >
-                          </div>
-                        )}
-                      </div>
+                    <div className="flex justify-center mt-3">
+                      {expandedOrder === order.id ? (
+                        <FiChevronUp className="text-gray-400" />
+                      ) : (
+                        <FiChevronDown className="text-gray-400" />
+                      )}
                     </div>
                   </div>
                   
-                  <div className="flex justify-center mt-3">
-                    {expandedOrder === order.id ? (
-                      <FiChevronUp className="text-gray-400" />
-                    ) : (
-                      <FiChevronDown className="text-gray-400" />
-                    )}
-                  </div>
-                </div>
-                
-                {expandedOrder === order.id && (
-                  <div className="px-4 pb-4 md:px-6 md:pb-6 animate-fade-in">
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <h4 className="font-medium text-gray-700 mb-3 flex items-center">
-                        <FiShoppingBag className="ml-2 text-indigo-500" size={18} />
-                        جزئیات سفارش
-                      </h4>
-                      <div className="space-y-3">
-                        {order.items.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-xs">
-                            <div className="flex items-center gap-3">
-                              {item.product.image || IMG ? (
-                                <img 
-                                  src={IMG} 
-                                  alt={item.product.name}
-                                  className="w-12 h-12 object-cover rounded-lg"
-                                />
-                              ) : (
-                                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                                  <FiPackage className="w-5 h-5 text-gray-400" />
+                  {expandedOrder === order.id && (
+                    <div className="px-4 pb-4 md:px-6 md:pb-6 animate-fade-in">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                            <FiCreditCard className="ml-2 text-indigo-500" size={18} />
+                            خلاصه پرداخت
+                          </h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-600">جمع کل سفارش:</span>
+                              <span className="text-sm font-medium">{order.original_price.toLocaleString('fa-IR')} تومان</span>
+                            </div>
+                            
+                            {hasDiscount && (
+                              <>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-600 flex items-center">
+                                    <FiPercent className="ml-1 text-green-500" size={14} />
+                                    تخفیف:
+                                  </span>
+                                  <span className="text-sm font-medium text-green-600">
+                                    {discountAmount.toLocaleString('fa-IR')} تومان
+                                  </span>
                                 </div>
-                              )}
-                              <div>
-                                <p className="text-sm font-medium text-gray-800">{item.product.name}</p>
-                                <p className="text-xs text-gray-500 mt-1">فروشنده: {item.seller.shop_name}</p>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-600 flex items-center">
+                                    <FiTag className="ml-1 text-blue-500" size={14} />
+                                    کد تخفیف:
+                                  </span>
+                                  <span className="text-sm font-medium bg-blue-50 text-blue-600 px-2 py-1 rounded-md">
+                                    {order.discount_code}
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            
+                            <div className="pt-2 border-t border-gray-200">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-600">هزینه ارسال:</span>
+                                <span className="text-sm font-medium">رایگان</span>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-indigo-600">{item.price.toLocaleString('fa-IR')} تومان</p>
-                              <p className="text-xs text-gray-500 mt-1">تعداد: {item.quantity.toLocaleString('fa-IR')}</p>
-                              <p className="text-xs font-medium text-indigo-600 mt-1">
-                                جمع: {(item.price * item.quantity).toLocaleString('fa-IR')} تومان
-                              </p>
+                            
+                            <div className="pt-2 border-t border-gray-200">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-700">مبلغ قابل پرداخت:</span>
+                                <span className="text-lg font-bold text-indigo-600">
+                                  {order.total_price.toLocaleString('fa-IR')} تومان
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        ))}
+                        </div>
+                        
+                        <div className="md:col-span-2 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                            <FiPackage className="ml-2 text-indigo-500" size={18} />
+                            جزئیات محصولات
+                          </h4>
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-100">
+                                <tr>
+                                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">محصول</th>
+                                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">تعداد</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">قیمت واحد</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">قیمت کل</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {order.items.map((item) => (
+                                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                      <div className="flex items-center gap-3">
+                                        <div className="flex-shrink-0 h-12 w-12">
+                                          <img 
+                                            src={IMG} 
+                                            alt={item.product.name}
+                                            className="h-12 w-12 object-cover rounded-lg"
+                                          />
+                                        </div>
+                                        <div>
+                                          <p className="text-sm font-medium text-gray-800">{item.product.name}</p>
+                                          <p className="text-xs text-gray-500 mt-1">فروشنده: {item.seller.shop_name}</p>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                                      <span className="px-2 py-1 bg-gray-100 rounded-md text-sm">
+                                        {item.quantity.toLocaleString('fa-IR')}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-gray-500 text-sm">
+                                      {item.price.toLocaleString('fa-IR')} تومان
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 text-sm">
+                                      {(item.price * item.quantity).toLocaleString('fa-IR')} تومان
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
                       </div>
                       
-                      <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center">
-                        <span className="text-sm text-gray-600">جمع کل سفارش:</span>
-                        <span className="font-medium text-lg text-indigo-600">{order.total_price.toLocaleString('fa-IR')} تومان</span>
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h4 className="font-medium text-gray-700 mb-3 flex items-center">
+                          <FiTruck className="ml-2 text-indigo-500" size={18} />
+                          اطلاعات ارسال
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <h5 className="text-xs font-medium text-gray-500 mb-1">وضعیت ارسال</h5>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${
+                                order.status === 'completed' ? 'bg-green-500' : 
+                                order.status === 'delivered' ? 'bg-violet-500' :
+                                order.status === 'cancelled' ? 'bg-red-500' : 
+                                order.status === 'refunded' ? 'bg-blue-500' : 'bg-amber-500'
+                              }`}></div>
+                              <span className="text-sm">
+                                {getStatusText(order.status)}
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-medium text-gray-500 mb-1">تاریخ تحویل تخمینی</h5>
+                            <p className="text-sm">۲ تا ۳ روز کاری</p>
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-medium text-gray-500 mb-1">روش تحویل</h5>
+                            <p className="text-sm">پست پیشتاز</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
