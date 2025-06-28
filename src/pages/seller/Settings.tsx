@@ -357,18 +357,20 @@ const Settings: React.FC = () => {
   }
 
   return (
-    <div className="bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9] min-h-screen p-4 md:p-8" style={{ direction: "rtl" }}>
+    <div className="bg-gray-50 min-h-screen p-4 md:p-6" style={{ direction: 'rtl' }}>
       <ToastContainer {...toastConfig} />
       
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-[#1e293b] flex items-center justify-center">
-            <FiSettings className="ml-2 text-[#00509D]" size={32} />
-            تنظیمات فروشگاه
-          </h1>
-          <p className="text-[#64748b] mt-3 max-w-2xl mx-auto">
-            مدیریت کامل تنظیمات و ویژگی‌های فروشگاه اینترنتی خود را در این بخش انجام دهید
-          </p>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center">
+              <FiSettings className="ml-2 text-indigo-600" size={28} />
+              تنظیمات فروشگاه
+            </h1>
+            <p className="text-gray-500 mt-2">
+              مدیریت کامل تنظیمات و ویژگی‌های فروشگاه اینترنتی خود را در این بخش انجام دهید
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

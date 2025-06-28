@@ -120,41 +120,6 @@ const SubCategoryProducts: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
-
-                            <div>
-                                <h3 className="font-semibold mb-3 text-[#FDC500] border-b border-[#00509D] pb-2">محدوده قیمت</h3>
-                                <div className="px-2">
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="50000000"
-                                        step="1000000"
-                                        value={priceRange[0]}
-                                        onChange={(e) => handlePriceChange(e, 0)}
-                                        className="w-full mb-2 accent-[#FDC500]"
-                                    />
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="50000000"
-                                        step="1000000"
-                                        value={priceRange[1]}
-                                        onChange={(e) => handlePriceChange(e, 1)}
-                                        className="w-full mb-4 accent-[#FDC500]"
-                                    />
-                                    <div className="flex justify-between text-sm">
-                                        <span>{formatPrice(priceRange[0])}</span>
-                                        <span>{formatPrice(priceRange[1])}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={resetFilters}
-                                className="w-full py-2 bg-[#FDC500] text-black rounded-lg font-medium hover:bg-[#FFD700] transition-colors"
-                            >
-                                حذف فیلترها
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -200,41 +165,6 @@ const SubCategoryProducts: React.FC = () => {
                                         ))}
                                     </div>
                                 </div>
-
-                                <div>
-                                    <h3 className="font-semibold mb-3 text-[#1e293b]">محدوده قیمت</h3>
-                                    <div className="px-2">
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="50000000"
-                                            step="1000000"
-                                            value={priceRange[0]}
-                                            onChange={(e) => handlePriceChange(e, 0)}
-                                            className="w-full mb-2 accent-[#00296B]"
-                                        />
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="50000000"
-                                            step="1000000"
-                                            value={priceRange[1]}
-                                            onChange={(e) => handlePriceChange(e, 1)}
-                                            className="w-full mb-4 accent-[#00296B]"
-                                        />
-                                        <div className="flex justify-between text-sm text-[#64748b]">
-                                            <span>{formatPrice(priceRange[0])}</span>
-                                            <span>{formatPrice(priceRange[1])}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={resetFilters}
-                                    className="w-full py-2 bg-gradient-to-r from-[#00296B] to-[#00509D] text-white rounded-lg font-medium hover:shadow-md transition-all"
-                                >
-                                    حذف فیلترها
-                                </button>
                             </div>
                         </div>
                     </aside>
