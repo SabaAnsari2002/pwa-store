@@ -168,9 +168,6 @@ const SellerLogin: React.FC = () => {
                         <div className="mt-8 pt-6 border-t border-gray-200 text-center">
                             <p className="text-sm text-gray-600">
                                 مشکل در ورود دارید؟{' '}
-                                <Link to="/contact" className="text-[#2563eb] hover:underline font-medium">
-                                    پشتیبانی آنلاین
-                                </Link>
                             </p>
                         </div>
                     </div>

@@ -5,7 +5,6 @@ const SubCategoryPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
-    // اینجا می‌توانید بر اساس id محصولات مربوط به این زیردسته‌بندی را از API یا آرایه‌ای دریافت کنید
     const products = [
         { id: 1, subCategoryId: 1, name: "موبایل سامسونگ گلکسی S21", image: "https://via.placeholder.com/150" },
         { id: 2, subCategoryId: 1, name: "موبایل اپل آیفون 13", image: "https://via.placeholder.com/150" },
@@ -34,7 +33,6 @@ const SubCategoryPage: React.FC = () => {
         { id: 25, subCategoryId: 10, name: "دفتر یادداشت جیبی", image: "https://via.placeholder.com/150" },
     ];
 
-    // فیلتر کردن محصولات مربوط به زیردسته‌بندی انتخاب‌شده
     const filteredProducts = products.filter((product) => product.subCategoryId === Number(id));
 
     return (

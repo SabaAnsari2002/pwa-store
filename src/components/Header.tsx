@@ -220,10 +220,6 @@ const Header: React.FC = () => {
               </svg>
               <span>وبلاگ</span>
             </a>
-            <a href="/contact" className="hover:text-yellow-400 transition-colors flex items-center gap-1">
-              <FiMail className="w-4 h-4" />
-              <span>تماس با ما</span>
-            </a>
           </div>
         </div>
       </nav>

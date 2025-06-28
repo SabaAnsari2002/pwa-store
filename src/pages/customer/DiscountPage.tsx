@@ -301,14 +301,6 @@ const DiscountPage: React.FC = () => {
                                                 
                                                 <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                                                     <div className="flex items-center text-gray-500">
-                                                        <FiCalendar className="ml-1" size={12} />
-                                                        <span>شروع: {formatDate(d.valid_from)}</span>
-                                                    </div>
-                                                    <div className="flex items-center text-gray-500">
-                                                        <FiCalendar className="ml-1" size={12} />
-                                                        <span>پایان: {formatDate(d.valid_to)}</span>
-                                                    </div>
-                                                    <div className="flex items-center text-gray-500">
                                                         <FiClock className="ml-1" size={12} />
                                                         <span>مانده: {d.remaining_time}</span>
                                                     </div>

@@ -1,9 +1,11 @@
 import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { categories } from "../data/categories";
 
 const CategoryMenu: React.FC = () => {
     const [showMenu, setShowMenu] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const navigate = useNavigate();
 
     const handleMouseEnter = () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -14,6 +16,11 @@ const CategoryMenu: React.FC = () => {
         timeoutRef.current = setTimeout(() => {
             setShowMenu(false);
         }, 200);
+    };
+
+    const handleSubcategoryClick = (subcategoryName: string) => {
+        const urlFriendlyName = subcategoryName;
+        navigate(`/subcategory-products/${urlFriendlyName}`);
     };
 
     return (
@@ -37,6 +44,7 @@ const CategoryMenu: React.FC = () => {
                                     <li
                                         key={i}
                                         className="hover:text-[#FDC500] transition-colors cursor-pointer pr-2"
+                                        onClick={() => handleSubcategoryClick(sub.name)}
                                     >
                                         {sub.name}
                                     </li>

@@ -31,7 +31,6 @@ import WishlistPageCustomer from "./pages/customer/WishlistPage";
 import SellerRegister from "./pages/seller/SellerRegister";
 import SellerLogin from "./pages/seller/SellerLogin";
 import About from "./pages/About";
-import Contact from "./pages/Contact";
 import Blog from "./pages/Blog";
 import BlogPostDetail from "./pages/BlogPostDetail";
 import Shop from  "./pages/Shop";
@@ -57,7 +56,6 @@ const App: React.FC = () => {
                         <Route path="/category/:id" element={<CategoryPage />} />
                         <Route path="/subcategory/:id" element={<SubCategoryPage />} />
                         <Route path="/about" element={<About />} />
-                        <Route path="/contact" element={<Contact />} />
                         <Route path="/blog" element={<Blog />} />
                         <Route path="/blog/:id" element={<BlogPostDetail />} />
                         <Route path="/shop" element={<Shop />} />

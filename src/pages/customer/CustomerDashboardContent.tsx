@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { FiUser, FiShoppingBag, FiCreditCard, FiGift, FiStar, FiBell, FiCalendar } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { getOrders } from "../../api/orders";
+import { userInfo } from "os";
 
 interface UserData {
     username: string;

@@ -17,7 +17,6 @@ const Sidebar: React.FC = () => {
         { to: "/customer-dashboard/reviews", label: "نظرات و بازخوردها" },
         { to: "/customer-dashboard/notifications", label: "اعلان‌ها و اطلاع‌رسانی‌ها" },
         { to: "/customer-dashboard/loyalty", label: "برنامه‌های وفاداری و سطح‌بندی مشتریان" },
-        { to: "/customer-dashboard/compare-products", label: "مقایسه محصولات خریداری‌شده" },
     ];
 
     return (

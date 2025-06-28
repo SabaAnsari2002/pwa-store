@@ -71,6 +71,7 @@ const AccountSettingsPage: React.FC = () => {
 
     fetchUserData();
   }, []);
+  
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
