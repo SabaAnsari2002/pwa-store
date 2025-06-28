@@ -10,11 +10,8 @@ import {
 import { BsBoxSeam, BsGraphUpArrow } from "react-icons/bs";
 import { MdOutlineAttachMoney, MdOutlineInventory } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
-import { getOrders} from '../../api/orders';
+import { getOrders } from '../../api/orders';
 import { toast } from "react-toastify";
-
-
-
 
 interface OrderItem {
   id: number;
@@ -44,14 +41,13 @@ interface Order {
   created_at: string;
 }
 
-
 interface Product {
-    id: number;
-    name: string;
-    category: string;
-    subcategory: string;
-    price: number;
-    stock: number;
+  id: number;
+  name: string;
+  category: string;
+  subcategory: string;
+  price: number;
+  stock: number;
 }
 
 const monthlySalesData = [
@@ -62,8 +58,6 @@ const monthlySalesData = [
   { name: "مرداد", فروش: 4500, مشتریان: 130, سفارشات: 90 },
   { name: "شهریور", فروش: 5200, مشتریان: 150, سفارشات: 105 },
 ];
-
-
 
 const topProductsData = [
   { name: "لپ‌تاپ ایسوس", فروش: 1800, سهم: 28 },
@@ -82,8 +76,47 @@ const trafficSources = [
   { name: "سایر", value: 5 },
 ];
 
-
 const COLORS = ["#6366F1", "#10B981", "#F59E0B", "#EC4899", "#8B5CF6", "#3B82F6"];
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-4 rounded-lg shadow-xl border border-gray-200">
+        <p className="font-bold text-gray-800">{label}</p>
+        {payload.map((item: any, index: number) => (
+          <p key={index} className="flex items-center text-sm mt-1">
+            <span 
+              className="w-3 h-3 rounded-full mr-2" 
+              style={{ backgroundColor: item.color }}
+            ></span>
+            {item.name}: <span className="font-bold mr-1">
+              {new Intl.NumberFormat('fa-IR').format(item.value)}{item.dataKey === 'فروش' ? ' تومان' : ''}
+              {item.dataKey === 'value' ? '%' : ''}
+            </span>
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomYAxisTick = ({ x, y, payload }: any) => {
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text 
+        x={0} 
+        y={0} 
+        dy={4} 
+        textAnchor="end" 
+        fill="#666"
+        fontSize={12}
+      >
+        {new Intl.NumberFormat('fa-IR').format(payload.value)}
+      </text>
+    </g>
+  );
+};
 
 const ProfessionalDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -102,114 +135,135 @@ const ProfessionalDashboard: React.FC = () => {
   var totalusers = [];
   var res_res = 0;
 
-
-
   const handlenav = () => {
     navigate("/seller-dashboard/orders");
-    
   };
 
   useEffect(() => {
-      const fetchOrders = async () => {
-        try {
-          setLoading(true);
-          const fetchedOrders = await getOrders();
-          setOrders(fetchedOrders);
-          setFilteredOrders(fetchedOrders);
-        } catch (error) {
-          toast.error('خطا در دریافت سفارشات');
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchOrders();
-    }, []);
-
-
-    for (let i = 0; i < orders.length ; i++) {
-      var res = orders.map((o)=> o.user.id);
-      for (let j = 0; j < res.length ; j++) {
-        if(totalusers.length === 0){
-          totalusers.push(res[0]);
-        }
-        if(res[j] !== res[i]){
-          totalusers.push(res[j]);
-        }
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const fetchedOrders = await getOrders();
+        setOrders(fetchedOrders);
+        setFilteredOrders(fetchedOrders);
+      } catch (error) {
+        toast.error('خطا در دریافت سفارشات');
+      } finally {
+        setLoading(false);
       }
-      res_res = totalusers.length;
+    };
+    fetchOrders();
+  }, []);
+
+  for (let i = 0; i < orders.length ; i++) {
+    var res = orders.map((o)=> o.user.id);
+    for (let j = 0; j < res.length ; j++) {
+      if(totalusers.length === 0){
+        totalusers.push(res[0]);
+      }
+      if(res[j] !== res[i]){
+        totalusers.push(res[j]);
+      }
     }
-
-
+    res_res = totalusers.length;
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fa-IR');
   };
 
-
   const refreshAccessToken = async () => {
-      if (!refresh_token) {
-          console.error("توکن refresh یافت نشد.");
-          return null;
-      }
-      const response = await fetch("http://localhost:8000/api/token/refresh/", {
-          method: "POST",
-          headers: {
-              "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ refresh: refresh_token }),
-      });
-      if (response.ok) {
-          const data = await response.json();
-          const newAccessToken = data.access_token;
-          localStorage.setItem("access_token", newAccessToken);
-          return newAccessToken;
-      } else {
-          console.error("خطا در تمدید توکن.");
-          return null;
-      }
+    if (!refresh_token) {
+      console.error("توکن refresh یافت نشد.");
+      return null;
+    }
+    const response = await fetch("http://localhost:8000/api/token/refresh/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh: refresh_token }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      const newAccessToken = data.access_token;
+      localStorage.setItem("access_token", newAccessToken);
+      return newAccessToken;
+    } else {
+      console.error("خطا در تمدید توکن.");
+      return null;
+    }
   };
 
   const fetchProducts = async () => {
-      setLoading(true);
-      try {
-          let currentToken = token;
-          if (!currentToken) {
-              currentToken = await refreshAccessToken();
-          }
-          if (!currentToken) {
-              console.error("توکن معتبر یافت نشد.");
-              return;
-          }
-          const response = await fetch("http://localhost:8000/api/products/", {
-              headers: {
-                  Authorization: `Bearer ${currentToken}`,
-              },
-          });
-          if (response.ok) {
-              const data = await response.json();
-              if (Array.isArray(data)) {
-                  setProducts(data);
-              } else {
-                  console.error("خطا: داده دریافتی آرایه نیست", data);
-                  setProducts([]);
-              }
-          } else {
-              const error = await response.json();
-              console.error(`خطا در واکشی محصولات: ${error.detail || response.statusText}`);
-              setProducts([]);
-          }
-      } catch (err) {
-          console.error("خطا در ارتباط با سرور:", err);
-          setProducts([]);
-      } finally {
-          setLoading(false); 
+    setLoading(true);
+    try {
+      let currentToken = token;
+      if (!currentToken) {
+        currentToken = await refreshAccessToken();
       }
+      if (!currentToken) {
+        console.error("توکن معتبر یافت نشد.");
+        return;
+      }
+      const response = await fetch("http://localhost:8000/api/products/", {
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setProducts(data);
+        } else {
+          console.error("خطا: داده دریافتی آرایه نیست", data);
+          setProducts([]);
+        }
+      } else {
+        const error = await response.json();
+        console.error(`خطا در واکشی محصولات: ${error.detail || response.statusText}`);
+        setProducts([]);
+      }
+    } catch (err) {
+      console.error("خطا در ارتباط با سرور:", err);
+      setProducts([]);
+    } finally {
+      setLoading(false); 
+    }
   };
 
   useEffect(() => {
-      fetchProducts();
+    fetchProducts();
   }, []);
 
+
+
+  const renderCustomizedLabel = ({
+    cx,
+    cy,
+    midAngle,
+    innerRadius,
+    outerRadius,
+    percent,
+    index
+  }: any) => {
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+    const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="white"
+        textAnchor="middle"
+        dominantBaseline="central"
+        className="text-xs font-bold"
+      >
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen p-4 md:p-6" style={{ direction: 'rtl' }}>
@@ -227,7 +281,7 @@ const ProfessionalDashboard: React.FC = () => {
               <div>
                 <p className="text-gray-500 text-sm">فروش کل</p>
                 <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                    {totalSales.toLocaleString('fa-IR')}
+                  {new Intl.NumberFormat('fa-IR').format(totalSales)}
                   <span className="text-sm font-normal text-gray-500 mr-1">تومان</span>
                 </h3>
               </div>
@@ -242,7 +296,7 @@ const ProfessionalDashboard: React.FC = () => {
                 ) : (
                   <FiTrendingUp className="ml-1 transform rotate-180" />
                 )}
-                {(Math.abs(parseFloat(growthRate))).toLocaleString('fa-IR')}%
+                {new Intl.NumberFormat('fa-IR').format(Math.abs(parseFloat(growthRate)))}%
               </span>
               <span className="text-gray-500 text-sm mr-1">نسبت به خرید های قبل</span>
             </div>
@@ -253,7 +307,7 @@ const ProfessionalDashboard: React.FC = () => {
               <div>
                 <p className="text-gray-500 text-sm">مشتریان</p>
                 <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                  {res_res.toLocaleString('fa-IR')}
+                  {new Intl.NumberFormat('fa-IR').format(res_res)}
                   <span className="text-sm font-normal text-gray-500 mr-1">نفر</span>
                 </h3>
               </div>
@@ -265,11 +319,11 @@ const ProfessionalDashboard: React.FC = () => {
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="h-2 rounded-full bg-green-500" 
-                  style={{ width: `${(orders[orders?.length - 1]?. user.id / 200 * 100)}%` }}
+                  style={{ width: `${(orders[orders?.length - 1]?.user.id / 200 * 100)}%` }}
                 ></div>
               </div>
               <p className="text-gray-500 text-sm mt-1">
-                {((orders[orders?.length - 1]?.user.id / 200) * 100).toLocaleString('fa-IR')}% از هدف ماهانه
+                {new Intl.NumberFormat('fa-IR').format((orders[orders?.length - 1]?.user.id / 200) * 100)}% از هدف ماهانه
               </p>
             </div>
           </div>
@@ -279,7 +333,7 @@ const ProfessionalDashboard: React.FC = () => {
               <div>
                 <p className="text-gray-500 text-sm">سفارشات</p>
                 <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                  {orders.length.toLocaleString('fa-IR')}
+                  {new Intl.NumberFormat('fa-IR').format(orders.length)}
                   <span className="text-sm font-normal text-gray-500 mr-1">سفارش</span>
                 </h3>
               </div>
@@ -307,9 +361,8 @@ const ProfessionalDashboard: React.FC = () => {
               <div>
                 <p className="text-gray-500 text-sm">موجودی انبار</p>
                 <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                  {totalstock.toLocaleString('fa-IR')}
+                  {new Intl.NumberFormat('fa-IR').format(totalstock)}
                   <span className="text-sm font-normal text-gray-500 mr-1">محصول</span>
-                  
                 </h3>
               </div>
               <div className="bg-purple-100 p-3 rounded-lg">
@@ -337,29 +390,41 @@ const ProfessionalDashboard: React.FC = () => {
               </h2>
               <div className="mt-3 sm:mt-0 flex space-x-2 space-x-reverse">
                 <button className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-lg">۶ ماهه</button>
-                <button className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-lg">سالانه</button>
               </div>
             </div>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlySalesData}>
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: '8px', 
-                      border: 'none', 
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                      textAlign: 'right'
-                    }}
-                    formatter={(value) => [`${value} تومان`, "مبلغ فروش"]}
+                <BarChart 
+                  data={monthlySalesData}
+                  margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
+                  barSize={80}
+                >
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 12 }}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={{ stroke: '#e2e8f0' }}
                   />
-                  <Legend />
+                  <YAxis 
+                    tick={<CustomYAxisTick />}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={{ stroke: '#e2e8f0' }}
+                    width={60}
+                  />
+                  <Tooltip 
+                    content={<CustomTooltip />}
+                    cursor={{ fill: '#f1f5f9' }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: 20 }}
+                    formatter={(value) => <span className="text-sm text-gray-600">{value}</span>}
+                  />
                   <Bar 
                     dataKey="فروش" 
                     fill="#6366F1" 
                     radius={[4, 4, 0, 0]}
                     animationDuration={1500}
+                    name="فروش (هزار تومان)"
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -383,7 +448,7 @@ const ProfessionalDashboard: React.FC = () => {
                     outerRadius={90}
                     innerRadius={50}
                     paddingAngle={2}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toLocaleString('fa-IR')}%`}
+                    label={renderCustomizedLabel}
                     labelLine={false}
                   >
                     {topProductsData.map((entry, index) => (
@@ -391,13 +456,21 @@ const ProfessionalDashboard: React.FC = () => {
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value) => [`${value} تومان`, "مبلغ فروش"]}
-                    contentStyle={{ 
-                      borderRadius: '8px', 
-                      border: 'none', 
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                      textAlign: 'right'
+                    content={<CustomTooltip />}
+                  />
+                  <Legend 
+                    layout="vertical" 
+                    verticalAlign="middle" 
+                    align="left"
+                    wrapperStyle={{ 
+                      paddingLeft: 20,
+                      fontSize: '0.75rem'
                     }}
+                    formatter={(value, entry, index) => (
+                      <span className="text-gray-600">
+                        {topProductsData[index]?.name}
+                      </span>
+                    )}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -423,20 +496,28 @@ const ProfessionalDashboard: React.FC = () => {
                     outerRadius={80}
                     innerRadius={40}
                     paddingAngle={2}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toLocaleString('fa-Ir')}%`}
+                    label={renderCustomizedLabel}
                   >
                     {trafficSources.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value) => [`${value}%`, "سهم ترافیک"]}
-                    contentStyle={{ 
-                      borderRadius: '8px', 
-                      border: 'none', 
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                      textAlign: 'right'
+                    content={<CustomTooltip />}
+                  />
+                  <Legend 
+                    layout="vertical" 
+                    verticalAlign="middle" 
+                    align="left"
+                    wrapperStyle={{ 
+                      paddingLeft: 20,
+                      fontSize: '0.75rem'
                     }}
+                    formatter={(value, entry, index) => (
+                      <span className="text-gray-600">
+                        {trafficSources[index]?.name}
+                      </span>
+                    )}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -450,19 +531,39 @@ const ProfessionalDashboard: React.FC = () => {
             </h2>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlySalesData}>
-                  <XAxis dataKey="name" />
-                  <YAxis yAxisId="left" orientation="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: '8px', 
-                      border: 'none', 
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                      textAlign: 'right'
-                    }}
+                <LineChart 
+                  data={monthlySalesData}
+                  margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
+                >
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 12 }}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={{ stroke: '#e2e8f0' }}
                   />
-                  <Legend />
+                  <YAxis 
+                    yAxisId="left" 
+                    orientation="left" 
+                    tick={<CustomYAxisTick />}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={{ stroke: '#e2e8f0' }}
+                    width={60}
+                  />
+                  <YAxis 
+                    yAxisId="right" 
+                    orientation="right" 
+                    tick={<CustomYAxisTick />}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={{ stroke: '#e2e8f0' }}
+                    width={60}
+                  />
+                  <Tooltip 
+                    content={<CustomTooltip />}
+                  />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: 20 }}
+                    formatter={(value) => <span className="text-sm text-gray-600">{value}</span>}
+                  />
                   <Line
                     yAxisId="left"
                     type="monotone"
@@ -508,10 +609,14 @@ const ProfessionalDashboard: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredOrders.map((orders, index) => (
                   <tr key={index} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{orders.id.toLocaleString('fa-IR')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {new Intl.NumberFormat('fa-IR').format(orders.id)}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{orders.user.username}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(orders.created_at)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{orders.total_price.toLocaleString('fa-IR')} تومان</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Intl.NumberFormat('fa-IR').format(orders.total_price)} تومان
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         orders.status === "completed" ? "bg-green-100 text-green-800" :
@@ -520,19 +625,13 @@ const ProfessionalDashboard: React.FC = () => {
                         "bg-red-100 text-red-800"
                       }`}>
                       {orders.status === "pending" && (
-                        <span>
-                          در حال پردازش
-                        </span>
+                        <span>در حال پردازش</span>
                       )}
                       {orders.status === "completed" && (
-                        <span>
-                          تحویل داده شده
-                        </span>
+                        <span>تحویل داده شده</span>
                       )}
                       {orders.status === "cancelled" && (
-                        <span>
-                          لغو شده
-                        </span>
+                        <span>لغو شده</span>
                       )}
                       </span>
                     </td>
@@ -542,7 +641,10 @@ const ProfessionalDashboard: React.FC = () => {
             </table>
           </div>
           <div className="mt-4 flex justify-end">
-            <button className="text-indigo-600 hover:text-indigo-800 text-sm font-medium" onClick={handlenav}>
+            <button 
+              className="text-indigo-600 hover:text-indigo-800 text-sm font-medium" 
+              onClick={handlenav}
+            >
               مشاهده همه سفارشات →
             </button>
           </div>

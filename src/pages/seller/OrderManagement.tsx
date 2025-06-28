@@ -166,10 +166,6 @@ const OrderManagement: React.FC = () => {
         return 'تکمیل شده';
       case 'cancelled':
         return 'لغو شده';
-      case 'refunded':
-        return 'مرجوعی';
-      case 'delivered':
-        return 'تحویل داده شده';
       default:
         return status;
     }
@@ -195,8 +191,6 @@ const OrderManagement: React.FC = () => {
     { value: 'pending', label: 'در انتظار', color: 'bg-amber-100 text-amber-800', icon: <FiRefreshCw size={16} />, count: orders.filter(o => o.status === 'pending').length },
     { value: 'completed', label: 'تکمیل شده', color: 'bg-emerald-100 text-emerald-800', icon: <FiCheckCircle size={16} />, count: orders.filter(o => o.status === 'completed').length },
     { value: 'cancelled', label: 'لغو شده', color: 'bg-rose-100 text-rose-800', icon: <FiXCircle size={16} />, count: orders.filter(o => o.status === 'cancelled').length },
-    { value: 'delivered', label: 'تحویل شده', color: 'bg-violet-100 text-violet-800', icon: <FiTruck size={16} />, count: orders.filter(o => o.status === 'delivered').length },
-    { value: 'refunded', label: 'مرجوعی', color: 'bg-blue-100 text-blue-800', icon: <FiPackage size={16} />, count: orders.filter(o => o.status === 'refunded').length },
   ];
 
   return (
@@ -301,7 +295,7 @@ const OrderManagement: React.FC = () => {
                         </div>
                         <div>
                           <h3 className="font-medium text-gray-800 flex items-center">
-                            سفارش #{order.id}
+                            سفارش {order.id}
                             <span className={`ml-3 px-2 py-1 text-xs rounded-full ${getStatusColor(order.status)}`}>
                               {getStatusText(order.status)}
                             </span>

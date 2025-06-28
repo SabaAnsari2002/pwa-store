@@ -1,248 +1,568 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
-  MdAttachMoney, 
-  MdMoneyOff, 
   MdSync, 
   MdSearch,
   MdOutlineReceipt,
   MdOutlineTrendingUp,
-  MdOutlineShowChart
+  MdOutlineShowChart,
+  MdOutlineCancel,
+  MdCheckCircleOutline
 } from "react-icons/md";
-import { FiTrendingUp, FiDownload, FiUpload } from "react-icons/fi";
-import { ResponsiveContainer, AreaChart, Area, Tooltip, XAxis, YAxis } from "recharts";
+import { ResponsiveContainer, AreaChart, Area, Tooltip, XAxis, YAxis, PieChart, Pie, Cell, Legend } from "recharts";
+import { motion } from "framer-motion";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-const initialTransactions = [
-  { id: 1, date: "۱۴۰۲/۰۷/۰۱", amount: 1500000, type: "درآمد", status: "تسویه شده", category: "فروش محصول" },
-  { id: 2, date: "۱۴۰۲/۰۷/۰۲", amount: 250000, type: "درآمد", status: "در انتظار تسویه", category: "خدمات" },
-  { id: 3, date: "۱۴۰۲/۰۷/۰۳", amount: 100000, type: "هزینه", status: "تسویه شده", category: "تبلیغات" },
-  { id: 4, date: "۱۴۰۲/۰۷/۰۴", amount: 320000, type: "درآمد", status: "تسویه شده", category: "اشتراک" },
-  { id: 5, date: "۱۴۰۲/۰۷/۰۵", amount: 75000, type: "هزینه", status: "تسویه شده", category: "نرم‌افزار" },
-];
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  category: string;
+  subcategory: string;
+}
+
+interface OrderItem {
+  id: number;
+  product: Product;
+  quantity: number;
+  price: number;
+}
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+}
+
+interface Order {
+  id: number;
+  user: User;
+  items: OrderItem[];
+  total_price: number;
+  original_price: number;
+  status: "completed" | "pending" | "cancelled";
+  created_at: string;
+  discount?: number;
+  discount_percentage?: number;
+}
 
 const FinancialDashboard: React.FC = () => {
-  const [transactions, setTransactions] = useState(initialTransactions);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("همه");
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [timeRange, setTimeRange] = useState("monthly");
+  const [accessToken, setAccessToken] = useState(localStorage.getItem("access_token"));
+  const [refreshToken, setRefreshToken] = useState(localStorage.getItem("refresh_token"));
 
-  const filteredTransactions = transactions.filter(t => 
-    t.type.toLowerCase().includes(searchQuery.toLowerCase()) &&
-    (activeFilter === "همه" || t.status === activeFilter)
-  );
-
-  const income = transactions
-    .filter(t => t.type === "درآمد")
-    .reduce((sum, t) => sum + t.amount, 0);
-  
-  const pending = transactions
-    .filter(t => t.status === "در انتظار تسویه")
-    .reduce((sum, t) => sum + t.amount, 0);
-  
-  const expenses = transactions
-    .filter(t => t.type === "هزینه")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const chartData = [
-    { name: "فروردین", income: 1200000, expenses: 450000 },
-    { name: "اردیبهشت", income: 1800000, expenses: 600000 },
-    { name: "خرداد", income: 2100000, expenses: 750000 },
-    { name: "تیر", income: 1650000, expenses: 550000 },
-    { name: "مرداد", income: 2400000, expenses: 800000 },
-    { name: "شهریور", income: 1950000, expenses: 650000 },
+  const orderStatuses = [
+    { value: "all", label: "همه" },
+    { value: "completed", label: "تکمیل شده" },
+    { value: "pending", label: "در انتظار" },
+    { value: "cancelled", label: "لغو شده" }
   ];
 
+  const refreshAccessToken = async () => {
+    if (!refreshToken) {
+      console.error("توکن refresh یافت نشد.");
+      return null;
+    }
+
+    try {
+      const response = await fetch("http://localhost:8000/api/token/refresh/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refresh: refreshToken }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const newAccessToken = data.access;
+        localStorage.setItem("access_token", newAccessToken);
+        setAccessToken(newAccessToken);
+        return newAccessToken;
+      } else {
+        console.error("خطا در تمدید توکن.");
+        return null;
+      }
+    } catch (error) {
+      console.error("خطا در ارتباط با سرور:", error);
+      return null;
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      let token = accessToken;
+
+      if (!token) {
+        token = await refreshAccessToken();
+        if (!token) {
+          toast.error("لطفاً مجدداً وارد شوید");
+          return;
+        }
+      }
+
+      const response = await fetch("http://localhost:8000/api/orders/", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(data);
+        setFilteredOrders(data);
+      } else if (response.status === 401) {
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          await fetchOrders();
+        } else {
+          toast.error("لطفاً مجدداً وارد شوید");
+        }
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.detail || "خطا در دریافت سفارشات");
+      }
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      toast.error("خطا در ارتباط با سرور");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let result = orders;
+    
+    if (activeFilter !== "all") {
+      result = result.filter(order => order.status === activeFilter);
+    }
+    
+    if (searchQuery) {
+      result = result.filter(order => 
+        order.user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.items.some(item => 
+          item.product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.product.category.toLowerCase().includes(searchQuery.toLowerCase())
+      ));
+    }
+    
+    setFilteredOrders(result);
+  }, [searchQuery, activeFilter, orders]);
+
+  const completedOrders = orders.filter(o => o.status === "completed");
+  const pendingOrders = orders.filter(o => o.status === "pending");
+  const cancelledOrders = orders.filter(o => o.status === "cancelled");
+
+  const totalRevenue = completedOrders.reduce((sum, order) => sum + order.total_price, 0);
+  const pendingAmount = pendingOrders.reduce((sum, order) => sum + order.total_price, 0);
+  const cancelledAmount = cancelledOrders.reduce((sum, order) => sum + order.total_price, 0);
+
+  const pieData = [
+    { name: "تکمیل شده", value: totalRevenue, color: "#10B981" },
+    { name: "در انتظار", value: pendingAmount, color: "#F59E0B" },
+    { name: "لغو شده", value: cancelledAmount, color: "#EF4444" }
+  ];
+
+  const generateChartData = () => {
+    if (timeRange === "monthly") {
+      const monthlyGroups: Record<string, { revenue: number, expenses: number }> = {};
+      
+      orders.forEach(order => {
+        const date = new Date(order.created_at);
+        const month = date.toLocaleDateString('fa-IR', { month: 'long' });
+        
+        if (!monthlyGroups[month]) {
+          monthlyGroups[month] = { revenue: 0, expenses: 0 };
+        }
+        
+        if (order.status === "completed") {
+          monthlyGroups[month].revenue += order.total_price;
+        } else if (order.status === "cancelled") {
+          monthlyGroups[month].expenses += order.total_price;
+        }
+      });
+      
+      return Object.keys(monthlyGroups).map(month => ({
+        name: month,
+        revenue: monthlyGroups[month].revenue,
+        expenses: monthlyGroups[month].expenses
+      }));
+    } else {
+      const weeklyGroups: Record<string, { revenue: number, expenses: number }> = {};
+      
+      orders.forEach(order => {
+        const date = new Date(order.created_at);
+        const weekNumber = Math.ceil(date.getDate() / 7);
+        const weekKey = `هفته ${weekNumber}`;
+        
+        if (!weeklyGroups[weekKey]) {
+          weeklyGroups[weekKey] = { revenue: 0, expenses: 0 };
+        }
+        
+        if (order.status === "completed") {
+          weeklyGroups[weekKey].revenue += order.total_price;
+        } else if (order.status === "cancelled") {
+          weeklyGroups[weekKey].expenses += order.total_price;
+        }
+      });
+      
+      return Object.keys(weeklyGroups).map(week => ({
+        name: week,
+        revenue: weeklyGroups[week].revenue,
+        expenses: weeklyGroups[week].expenses
+      }));
+    }
+  };
+
+  const chartData = generateChartData();
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fa-IR');
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('fa-IR').format(value) + " تومان";
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.5
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
   return (
-    <div className="bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9] min-h-screen p-4 md:p-8" style={{ direction: "rtl" }}>
+    <div className="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen p-4 md:p-6" style={{ direction: "rtl" }}>
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#1e293b] flex items-center">
-              <MdOutlineTrendingUp className="ml-2 text-indigo-600" size={28} />
-              داشبورد مالی
-            </h1>
-            <p className="text-[#64748b] mt-2">وضعیت مالی و تراکنش‌های شما در یک نگاه</p>
-          </div>
-        </div>
-
-        <div className="mb-8 flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <MdSearch className="absolute left-3 top-3.5 text-gray-400" size={20} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm pr-10 pl-10 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="جستجوی تراکنش‌ها..."
-            />
-          </div>
-          <div className="flex space-x-2 space-x-reverse">
-            {["همه", "تسویه شده", "در انتظار تسویه"].map(filter => (
-              <button
-                key={filter}
-                onClick={() => setActiveFilter(filter)}
-                className={`px-4 py-2 rounded-lg ${activeFilter === filter 
-                  ? 'bg-indigo-600 text-white' 
-                  : 'bg-white text-gray-700 border border-gray-300'}`}
+        <motion.div 
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+          className="space-y-8"
+        >
+          <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center">
+                <MdOutlineTrendingUp className="ml-2 text-indigo-600" size={28} />
+                داشبورد مالی
+              </h1>
+              <p className="text-gray-600 mt-2">وضعیت مالی و تراکنش‌های شما در یک نگاه</p>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="bg-white border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
-                {filter}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <SummaryCard
-            title="کل درآمد"
-            value={income}
-            change="+12% نسبت به ماه گذشته"
-            icon={<FiTrendingUp size={24} className="text-green-600" />}
-            color="green"
-          />
-          <SummaryCard
-            title="در انتظار تسویه"
-            value={pending}
-            change="2 تراکنش در انتظار"
-            icon={<MdSync size={24} className="text-yellow-600 animate-spin" />}
-            color="yellow"
-          />
-          <SummaryCard
-            title="کل هزینه‌ها"
-            value={expenses}
-            change="-5% نسبت به ماه گذشته"
-            icon={<MdMoneyOff size={24} className="text-red-600" />}
-            color="red"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border-l-4 border-indigo-500">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-indigo-700 flex items-center">
-                <MdOutlineShowChart className="ml-2" />
-                عملکرد مالی سالانه
-              </h3>
-              <select className="bg-gray-100 border border-gray-300 text-gray-700 py-1 px-3 rounded-lg focus:outline-none">
-                <option>۱۴۰۲</option>
-                <option>۱۴۰۱</option>
-                <option>۱۴۰۰</option>
+                <option value="monthly">نمایش ماهانه</option>
+                <option value="weekly">نمایش هفتگی</option>
               </select>
             </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={chartData}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip
-                  formatter={(value: any) => [`${value.toLocaleString()} تومان`, ""]}
-                  contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="income" 
-                  name="درآمد" 
-                  stroke="#10B981" 
-                  fill="#D1FAE5" 
-                  strokeWidth={2} 
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="expenses" 
-                  name="هزینه" 
-                  stroke="#EF4444" 
-                  fill="#FECACA" 
-                  strokeWidth={2} 
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          </motion.div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-green-500">
-            <h3 className="text-xl font-semibold text-green-700 flex items-center mb-4">
-              <MdOutlineReceipt className="ml-2" />
-              توزیع هزینه‌ها
-            </h3>
-            <div className="space-y-4">
-              {[
-                { category: "تبلیغات", amount: 450000, percentage: 45, color: "bg-blue-500" },
-                { category: "نرم‌افزار", amount: 250000, percentage: 25, color: "bg-purple-500" },
-                { category: "تجهیزات", amount: 150000, percentage: 15, color: "bg-yellow-500" },
-                { category: "حقوق", amount: 100000, percentage: 10, color: "bg-red-500" },
-                { category: "سایر", amount: 50000, percentage: 5, color: "bg-gray-500" },
-              ].map((item, index) => (
-                <div key={index} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-700">{item.category}</span>
-                    <span className="font-medium">{item.amount.toLocaleString()} تومان</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`${item.color} h-2 rounded-full`} 
-                      style={{ width: `${item.percentage}%` }}
-                    ></div>
-                  </div>
-                </div>
+          <motion.div variants={itemVariants} className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <MdSearch className="absolute left-3 top-3.5 text-gray-400" size={20} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm pr-10 pl-10 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="جستجوی سفارشات..."
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {orderStatuses.map((status) => (
+                <button
+                  key={status.value}
+                  onClick={() => setActiveFilter(status.value)}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    activeFilter === status.value
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {status.label}
+                </button>
               ))}
             </div>
-          </div>
-        </div>
+          </motion.div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-indigo-500">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-indigo-700 flex items-center">
-              <MdOutlineReceipt className="ml-2" />
-              آخرین تراکنش‌ها
-            </h3>
-            <button className="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-              مشاهده همه تراکنش‌ها →
-            </button>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاریخ</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">دسته‌بندی</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">مبلغ</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">وضعیت</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عملیات</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTransactions.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{t.date}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        t.type === "درآمد" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                      }`}>
-                        {t.category}
-                      </span>
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                      t.type === "درآمد" ? "text-green-600" : "text-red-600"
-                    }`}>
-                      {t.amount.toLocaleString()} تومان
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        t.status === "تسویه شده"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}>
-                        {t.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button className="text-indigo-600 hover:text-indigo-900 mr-2">ویرایش</button>
-                      <button className="text-gray-500 hover:text-gray-700">جزئیات</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <SummaryCard
+              title="کل درآمد"
+              value={totalRevenue}
+              change={`${completedOrders.length} سفارش تکمیل شده`}
+              icon={<MdCheckCircleOutline size={24} className="text-green-600" />}
+              color="green"
+              loading={loading}
+            />
+            <SummaryCard
+              title="در انتظار تسویه"
+              value={pendingAmount}
+              change={`${pendingOrders.length} سفارش در انتظار`}
+              icon={<MdSync size={24} className="text-yellow-600 animate-spin" />}
+              color="yellow"
+              loading={loading}
+            />
+            <SummaryCard
+              title="سفارشات لغو شده"
+              value={cancelledAmount}
+              change={`${cancelledOrders.length} سفارش لغو شده`}
+              icon={<MdOutlineCancel size={24} className="text-red-600" />}
+              color="red"
+              loading={loading}
+            />
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border-l-4 border-indigo-500">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-indigo-700 flex items-center">
+                  <MdOutlineShowChart className="ml-2" />
+                  عملکرد مالی {timeRange === "monthly" ? "ماهیانه" : "هفتگی"}
+                </h3>
+                <select 
+                  className="bg-gray-100 border border-gray-300 text-gray-700 py-1 px-3 rounded-lg focus:outline-none"
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value)}
+                >
+                  <option value="monthly">ماهیانه</option>
+                  <option value="weekly">هفتگی</option>
+                </select>
+              </div>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#EF4444" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#EF4444" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fill: '#6B7280' }}
+                      axisLine={{ stroke: '#9CA3AF' }}
+                    />
+                    <YAxis 
+                      tick={{ fill: '#6B7280' }}
+                      axisLine={{ stroke: '#9CA3AF' }}
+                      tickFormatter={(value) => new Intl.NumberFormat('fa-IR').format(value / 1000000) + 'میلیون'}
+                    />
+                    <Tooltip
+                      formatter={(value: any) => [formatCurrency(value), ""]}
+                      contentStyle={{ 
+                        borderRadius: "8px", 
+                        border: "none", 
+                        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: '20px' }}
+                      formatter={(value) => <span className="text-gray-700">{value}</span>}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      name="درآمد" 
+                      stroke="#10B981" 
+                      fillOpacity={1} 
+                      fill="url(#colorRevenue)" 
+                      strokeWidth={2}
+                      activeDot={{ r: 6 }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="expenses" 
+                      name="هزینه" 
+                      stroke="#EF4444" 
+                      fillOpacity={1} 
+                      fill="url(#colorExpenses)" 
+                      strokeWidth={2}
+                      activeDot={{ r: 6 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-green-500">
+              <h3 className="text-xl font-semibold text-green-700 flex items-center mb-4">
+                <MdOutlineReceipt className="ml-2" />
+                توزیع مالی
+              </h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      labelLine={false}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: any) => [formatCurrency(value), ""]}
+                      contentStyle={{ 
+                        borderRadius: "8px", 
+                        border: "none", 
+                        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                    <Legend 
+                      layout="vertical"
+                      verticalAlign="middle"
+                      align="right"
+                      formatter={(value) => <span className="text-gray-700">{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-indigo-500">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-indigo-700 flex items-center">
+                <MdOutlineReceipt className="ml-2" />
+                آخرین سفارشات
+              </h3>
+              <div className="text-sm text-gray-500">
+                نمایش {filteredOrders.length} از {orders.length} سفارش
+              </div>
+            </div>
+            
+            {loading ? (
+              <div className="flex justify-center items-center h-40">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="text-center py-10 text-gray-500">
+                هیچ سفارشی یافت نشد
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">شماره سفارش</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">مشتری</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">محصولات</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاریخ</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">مبلغ</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">وضعیت</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredOrders.map((order) => (
+                      <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="font-medium">{order.user.username}</div>
+                          <div className="text-gray-400 text-xs">{order.user.email}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col space-y-1">
+                            {order.items.map((item, idx) => (
+                              <div key={idx} className="text-sm text-gray-700">
+                                {item.product.name} ({item.quantity}x)
+                                <div className="text-xs text-gray-500">{item.product.category}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(order.created_at)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="text-gray-900">{formatCurrency(order.total_price)}</div>
+                          {order.discount_percentage && (
+                            <div className="text-xs text-green-600">
+                              {formatCurrency(order.original_price)} ({order.discount_percentage}% تخفیف)
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <StatusBadge status={order.status} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
       </div>
     </div>
+  );
+};
+
+const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
+  const statusConfig = {
+    completed: {
+      color: "bg-green-100 text-green-800",
+      icon: <MdCheckCircleOutline className="ml-1" />,
+      label: "تکمیل شده"
+    },
+    pending: {
+      color: "bg-yellow-100 text-yellow-800",
+      icon: <MdSync className="ml-1 animate-spin" />,
+      label: "در انتظار"
+    },
+    cancelled: {
+      color: "bg-red-100 text-red-800",
+      icon: <MdOutlineCancel className="ml-1" />,
+      label: "لغو شده"
+    }
+  };
+
+  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+
+  return (
+    <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center ${config.color}`}>
+      {config.icon}
+      {config.label}
+    </span>
   );
 };
 
@@ -251,13 +571,15 @@ const SummaryCard = ({
   value, 
   change, 
   icon, 
-  color 
+  color,
+  loading = false
 }: { 
   title: string, 
   value: number, 
   change: string,
   icon: React.ReactNode, 
-  color: string 
+  color: string,
+  loading?: boolean
 }) => {
   const colorClasses = {
     green: {
@@ -280,17 +602,26 @@ const SummaryCard = ({
     }
   };
 
+  const formattedValue = new Intl.NumberFormat('fa-IR').format(value) + " تومان";
+
   return (
-    <div className={`${colorClasses[color].bg} p-5 rounded-2xl shadow-sm border-t-4 ${colorClasses[color].border}`}>
+    <motion.div 
+      whileHover={{ y: -5 }}
+      className={`${colorClasses[color as keyof typeof colorClasses].bg} p-5 rounded-2xl shadow-sm border-t-4 ${colorClasses[color as keyof typeof colorClasses].border}`}
+    >
       <div className="flex justify-between items-start">
         <div>
-          <h4 className={`${colorClasses[color].text} font-medium text-sm`}>{title}</h4>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value.toLocaleString()} تومان</p>
+          <h4 className={`${colorClasses[color as keyof typeof colorClasses].text} font-medium text-sm`}>{title}</h4>
+          {loading ? (
+            <div className="h-8 bg-gray-200 rounded mt-2 w-3/4 animate-pulse"></div>
+          ) : (
+            <p className="text-2xl font-bold text-gray-900 mt-1">{formattedValue}</p>
+          )}
           <p className="text-xs text-gray-500 mt-2">{change}</p>
         </div>
-        <div className={`${colorClasses[color].iconBg} p-3 rounded-lg`}>{icon}</div>
+        <div className={`${colorClasses[color as keyof typeof colorClasses].iconBg} p-3 rounded-lg`}>{icon}</div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

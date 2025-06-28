@@ -681,7 +681,7 @@ const ProductManagement: React.FC = () => {
                                                     {product.subcategory}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#1e293b]">
-                                                    {product.price} تومان
+                                                    {product.price.toLocaleString('fa-IR')} تومان
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <ProductStatusBadge stock={product.stock} />
