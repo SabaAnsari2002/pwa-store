@@ -237,7 +237,7 @@ const ProductDetail: React.FC = () => {
   }, [notification]);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US").format(price);
+    return new Intl.NumberFormat("fa-IR").format(price);
   };
 
   const handleAddToCart = (store: Seller) => {
@@ -524,7 +524,7 @@ const ProductDetail: React.FC = () => {
                 <div className="flex items-center mr-2">
                   {renderStars(product.rating || 4)}
                 </div>
-                <span className="text-sm text-gray-500">({product.reviewCount || reviews.length} نظر)</span>
+                <span className="text-sm text-gray-500">({product.reviewCount || reviews.length.toLocaleString('fa-IR')} نظر)</span>
               </div>
               
               <div className="mb-6">
@@ -571,7 +571,7 @@ const ProductDetail: React.FC = () => {
                 onClick={() => setActiveTab("reviews")}
                 className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === "reviews" ? 'border-[#00296B] text-[#00296B]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
               >
-                نظرات کاربران ({reviews.length})
+                نظرات کاربران ({reviews.length.toLocaleString('fa-IR')})
               </button>
             </nav>
           </div>
@@ -641,7 +641,7 @@ const ProductDetail: React.FC = () => {
                     </div>
 
                     <div>
-                      <h3 className="text-xl font-bold text-gray-800 mb-6">نظرات کاربران ({reviews.length})</h3>
+                      <h3 className="text-xl font-bold text-gray-800 mb-6">نظرات کاربران ({reviews.length.toLocaleString('fa-IR')})</h3>
                       
                       {reviews.length === 0 ? (
                         <div className="bg-white rounded-xl shadow-sm p-8 text-center">
@@ -736,11 +736,11 @@ const ProductDetail: React.FC = () => {
                       <h3 className="font-semibold text-gray-800">{store.seller.shop_name}</h3>
                       <div className="flex items-center mt-1">
                         {renderStars(4)}
-                        <span className="text-xs text-gray-500 mr-1">({Math.floor(Math.random() * 50) + 10})</span>
+                        <span className="text-xs text-gray-500 mr-1">({(Math.floor(Math.random() * 50) + 10).toLocaleString('fa-IR')})</span>
                       </div>
                       <div className={`flex items-center text-xs mt-1 ${store.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {store.stock > 0 
-                          ? `${store.stock} عدد در انبار موجود است`
+                          ? `${store.stock.toLocaleString('fa-IR')} عدد در انبار موجود است`
                           : 'موجود نیست - به زودی'}
                       </div>
                       <div className="flex items-center text-xs text-gray-500 mt-1">
