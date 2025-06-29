@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { 
   FiPlus, FiEdit2, FiTrash2, FiSearch, 
   FiX, FiCheck, FiArrowUp, FiChevronDown,
-  FiFilter, FiUpload, FiDownload 
+  FiFilter, FiDownload 
 } from "react-icons/fi";
-import { BsBoxSeam, BsExclamationCircle } from "react-icons/bs";
+import { BsExclamationCircle } from "react-icons/bs";
 import { categories } from "../categoriesData";
 import * as XLSX from 'xlsx';
 

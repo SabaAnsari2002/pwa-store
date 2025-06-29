@@ -2,15 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { 
   FiPlus, FiEdit2, FiTrash2, FiSearch, FiX, FiCheck, 
   FiArrowUp, FiClock, FiCalendar, FiGift, FiPercent, 
-  FiAlertCircle, FiUser, FiShoppingBag, FiDollarSign
+  FiAlertCircle,FiDollarSign
 } from "react-icons/fi";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { addDays } from 'date-fns';
-import { registerLocale, setDefaultLocale } from "react-datepicker";
-import fa from 'date-fns';
 
 interface Discount {
   id: number;

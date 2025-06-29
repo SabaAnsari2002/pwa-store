@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LabelList
+  PieChart, Pie, Cell
 } from "recharts";
 import { FiTrendingUp, FiPieChart, FiDollarSign, FiCalendar, FiAward, FiUsers } from "react-icons/fi";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-interface User {
+interface Customer {
   id: number;
   username: string;
   email: string;
@@ -23,22 +23,22 @@ interface Product {
 }
 
 interface OrderItem {
-  id: number;
-  product: Product;
+  product_id: number;
+  product_name: string;
   quantity: number;
   price: number;
+  total_price: number;
 }
 
 interface Order {
-  id: number;
-  user: User;
+  order_id: number;
+  customer: Customer;
   items: OrderItem[];
   total_price: number;
-  original_price: number;
   status: string;
   created_at: string;
-  discount: number;
-  discount_percentage: number;
+  discount?: number;
+  discount_percentage?: number;
 }
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"];
@@ -105,7 +105,6 @@ const CustomYAxisTick = ({ x, y, payload }: any) => {
 
 const ReportsAndAnalytics: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [totalUsers, setTotalUsers] = useState<number>(0);
   const [useMockData, setUseMockData] = useState<boolean>(true);
@@ -153,7 +152,7 @@ const ReportsAndAnalytics: React.FC = () => {
         return;
       }
 
-      const response = await fetch("http://localhost:8000/api/orders/", {
+      const response = await fetch("http://localhost:8000/api/orders/by-seller/", {
         headers: {
           Authorization: `Bearer ${currentToken}`,
         },
@@ -173,41 +172,10 @@ const ReportsAndAnalytics: React.FC = () => {
     }
   };
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      let currentToken = token;
-      if (!currentToken) {
-        currentToken = await refreshAccessToken();
-      }
-      if (!currentToken) {
-        toast.error("توکن معتبر یافت نشد.");
-        return;
-      }
-
-      const response = await fetch("http://localhost:8000/api/products/", {
-        headers: {
-          Authorization: `Bearer ${currentToken}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(data);
-      } else {
-        toast.error("خطا در دریافت محصولات");
-      }
-    } catch (error) {
-      toast.error("خطا در ارتباط با سرور");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const calculateUniqueUsers = (ordersData: Order[]) => {
     const uniqueUserIds = new Set<number>();
     ordersData.forEach(order => {
-      uniqueUserIds.add(order.user.id);
+      uniqueUserIds.add(order.customer.id);
     });
     setTotalUsers(uniqueUserIds.size);
   };
@@ -247,8 +215,8 @@ const ReportsAndAnalytics: React.FC = () => {
       if (order.status !== 'completed') return;
       
       order.items.forEach(item => {
-        const productName = item.product.name;
-        productSales[productName] = (productSales[productName] || 0) + item.price * item.quantity;
+        const productName = item.product_name;
+        productSales[productName] = (productSales[productName] || 0) + item.total_price;
       });
     });
 
@@ -260,7 +228,6 @@ const ReportsAndAnalytics: React.FC = () => {
 
   useEffect(() => {
     fetchOrders();
-    fetchProducts();
   }, []);
 
   const monthlySalesData = useMockData ? mockMonthlyData : groupOrdersByMonth();
@@ -528,9 +495,9 @@ const ReportsAndAnalytics: React.FC = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {orders.slice(0, 5).map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.user.username}</td>
+                      <tr key={order.order_id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.order_id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.customer.username}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(order.created_at)}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Intl.NumberFormat('fa-IR').format(order.total_price)} تومان

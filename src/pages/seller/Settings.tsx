@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   FiSettings, FiShoppingBag, FiTruck, FiCreditCard, 
-  FiSave, FiUpload, FiInfo, FiPlus, FiX, FiImage 
+  FiSave, FiUpload, FiInfo, FiPlus, FiX 
 } from "react-icons/fi";
 import axios from "axios";
 import { toast, ToastContainer, ToastPosition } from "react-toastify";

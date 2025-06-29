@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { getOrders, updateOrderStatus } from "../../api/orders";
 import { 
   FiEye, 
-  FiChevronDown, 
   FiChevronUp, 
   FiPackage, 
   FiCheckCircle, 
@@ -188,7 +187,7 @@ const OrdersPage: React.FC = () => {
                         </div>
                         <div>
                           <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-                            سفارش #{order.id}
+                            سفارش {order.id}
                             <span className={`text-xs px-2 py-1 rounded-full ${status.color}`}>
                               {status.text}
                             </span>

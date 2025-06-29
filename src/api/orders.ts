@@ -50,6 +50,21 @@ export const getOrders = async (): Promise<Order[]> => {
   }
 };
 
+
+export const getOrders_seller = async (): Promise<Order[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/by-seller/`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 export const getOrderDetails = async (orderId: number): Promise<Order> => {
   try {
     const response = await axios.get(`${API_URL}/${orderId}/details/`);

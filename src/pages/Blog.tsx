@@ -29,8 +29,8 @@ interface BlogPost {
 const postsData: BlogPost[] = [
   {
     id: 1,
-    title: "معرفی پروژه بیچارم و اهداف آن",
-    summary: "در این مقاله با اهداف و ویژگی‌های پروژه بیچارم آشنا می‌شوید و دلیل انتخاب این نام را خواهید فهمید.",
+    title: "معرفی پروژه جوجیک و اهداف آن",
+    summary: "در این مقاله با اهداف و ویژگی‌های پروژه جوجیک آشنا می‌شوید و دلیل انتخاب این نام را خواهید فهمید.",
     date: "۱۴۰۲/۰۱/۱۵",
     category: "معرفی",
     readTime: "۵ دقیقه",
@@ -120,7 +120,7 @@ const Blog: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-extrabold text-[#00296B] mb-4">
-            وبلاگ <span className="text-[#FDC500]">بیچارم</span>
+            وبلاگ <span className="text-[#FDC500]">جوجیک</span>
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             جدیدترین مقالات و راهنمایی‌های تخصصی در زمینه خرید و فروش آنلاین

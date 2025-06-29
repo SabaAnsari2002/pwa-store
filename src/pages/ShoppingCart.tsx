@@ -137,6 +137,12 @@ const ShoppingCart: React.FC = () => {
     } catch (error: any) {
       console.error('خطا در اعمال کد تخفیف:', error);
 
+      setDiscounts(prev => {
+        const newDiscounts = {...prev};
+        delete newDiscounts[storeId];
+        return newDiscounts;
+      });
+
       let errorMessage = "خطا در اعمال کد تخفیف";
 
       if (error.response?.data?.error) {
@@ -183,7 +189,7 @@ const ShoppingCart: React.FC = () => {
       navigate('/login');
       return;
     }
-    
+
     const outOfStockItems = storeItems.filter(item => item.quantity > item.stock);
     if (outOfStockItems.length > 0) {
       toast.error(`بعضی از محصولات فروشگاه ${storeItems[0].storeName} موجودی کافی ندارند`, {
@@ -193,8 +199,17 @@ const ShoppingCart: React.FC = () => {
       return;
     }
 
+    const discountCode = discountCodes[storeId];
+    if (discountCode && checkoutErrors[storeId]) {
+      toast.error(`کد تخفیف برای فروشگاه ${storeItems[0].storeName} معتبر نیست`, {
+        position: "top-center",
+        rtl: true,
+      });
+      return;
+    }
+
     setIsCheckingOut(true);
-    
+
     try {
       const order = await checkoutOrder(
         storeItems.map(item => ({
@@ -221,16 +236,17 @@ const ShoppingCart: React.FC = () => {
 
     } catch (error: any) {
       console.error('خطا در ثبت سفارش:', error);
-      
+
       let errorMessage = "خطا در ثبت سفارش";
-      
+
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
-        
+
         if (errorMessage.includes("insufficient stock")) {
           errorMessage = "بعضی از محصولات موجودی کافی ندارند";
         } else if (errorMessage.includes("invalid discount")) {
           errorMessage = "کد تخفیف معتبر نیست";
+          handleRemoveDiscount(storeId);
         }
       } else if (error.message) {
         errorMessage = error.message;

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { FiUser, FiShoppingBag, FiCreditCard, FiGift, FiStar, FiBell, FiCalendar } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { getOrders } from "../../api/orders";
-import { userInfo } from "os";
+import axios from "axios";
 
 interface UserData {
     username: string;
@@ -29,12 +29,36 @@ interface Order {
     created_at: string;
 }
 
+interface Discount {
+    id: number;
+    title: string;
+    code: string;
+    description: string;
+    percentage: number;
+    for_first_purchase: boolean;
+    is_single_use: boolean;
+    min_order_amount: number;
+    valid_from: string;
+    valid_to: string;
+    is_active: boolean;
+    is_valid: boolean;
+    remaining_time: string;
+    seller?: number;
+    seller_name?: string;
+    shop_name?: string;
+}
+
 const CustomerDashboardContent: React.FC = () => {
     const [userData, setUserData] = useState<UserData | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loadingOrders, setLoadingOrders] = useState(true);
     const [activeTab, setActiveTab] = useState("dashboard");
+    const [loading, setLoading] = useState<boolean>(true);
     const navigate = useNavigate();
+    const [error, setError] = useState<string | null>(null);
+    const [discounts, setDiscounts] = useState<Discount[]>([]);
+    
+    
 
     const handleprofile = () => {
         navigate(`/customer-dashboard/account-setting`);
@@ -56,6 +80,29 @@ const CustomerDashboardContent: React.FC = () => {
     const handlepool = () => {
         navigate(`/customer-dashboard/wallet`)
     };
+
+
+    useEffect(() => {
+            const fetchDiscounts = async () => {
+                const token = localStorage.getItem("access_token");
+                try {
+                    setLoading(true);
+                    const res = await axios.get("http://localhost:8000/api/discounts/", {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    
+                    setDiscounts(res.data);
+                    setError(null);
+                } catch (err) {
+                    console.error("Error fetching discounts", err);
+                    setError("خطا در دریافت تخفیف‌ها. لطفا دوباره تلاش کنید.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+    
+            fetchDiscounts();
+        }, []);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -109,9 +156,9 @@ const CustomerDashboardContent: React.FC = () => {
         fetchOrders();
     }, []);
 
-    const getStatusDetails = (status: "pending" | "approved" | "cancelled") => {
+    const getStatusDetails = (status: "pending" | "approved" | "cancelled" | "delivered" | "completed") => {
         switch(status) {
-            case "approved":
+            case "completed":
                 return { 
                     text: "ارسال شده", 
                     color: "bg-green-100 text-green-800"
@@ -331,18 +378,10 @@ const CustomerDashboardContent: React.FC = () => {
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-[#f0f9ff] border border-[#bae6fd]">
                                     <div className="flex items-center">
-                                        <FiGift className="text-[#00509D] ml-2" />
-                                        <span className="text-[#00509D]">تخفیف فعال</span>
-                                    </div>
-                                    <span className="font-bold text-[#00509D]">۱۰٪ تخفیف</span>
-                                </div>
-
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-[#f0f9ff] border border-[#bae6fd]">
-                                    <div className="flex items-center">
                                         <FiBell className="text-[#00509D] ml-2" />
                                         <span className="text-[#00509D]">کوپن‌های موجود</span>
                                     </div>
-                                    <span className="font-bold text-[#00509D]">۳ عدد</span>
+                                    <span className="font-bold text-[#00509D]">{discounts.length.toLocaleString('fa-IR')} عدد</span>
                                 </div>
 
                                 <button className="w-full text-sm bg-gradient-to-r from-[#00509D] to-[#00296B] text-white py-2 px-4 rounded-lg font-medium hover:opacity-90 transition-opacity"

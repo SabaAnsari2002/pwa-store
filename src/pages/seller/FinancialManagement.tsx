@@ -13,33 +13,26 @@ import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  category: string;
-  subcategory: string;
-}
-
 interface OrderItem {
-  id: number;
-  product: Product;
+  product_id: number;
+  product_name: string;
   quantity: number;
   price: number;
+  total_price: number;
 }
 
-interface User {
+interface Customer {
   id: number;
   username: string;
   email: string;
 }
 
 interface Order {
-  id: number;
-  user: User;
+  order_id: number;
+  customer: Customer;
   items: OrderItem[];
   total_price: number;
-  original_price: number;
+  original_price?: number;
   status: "completed" | "pending" | "cancelled";
   created_at: string;
   discount?: number;
@@ -107,7 +100,7 @@ const FinancialDashboard: React.FC = () => {
         }
       }
 
-      const response = await fetch("http://localhost:8000/api/orders/", {
+      const response = await fetch("http://localhost:8000/api/orders/by-seller/", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -145,10 +138,9 @@ const FinancialDashboard: React.FC = () => {
     
     if (searchQuery) {
       result = result.filter(order => 
-        order.user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.customer.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.items.some(item => 
-          item.product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.product.category.toLowerCase().includes(searchQuery.toLowerCase())
+          item.product_name.toLowerCase().includes(searchQuery.toLowerCase())
       ));
     }
     
@@ -494,18 +486,18 @@ const FinancialDashboard: React.FC = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.id}</td>
+                      <tr key={order.order_id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.order_id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="font-medium">{order.user.username}</div>
-                          <div className="text-gray-400 text-xs">{order.user.email}</div>
+                          <div className="font-medium">{order.customer.username}</div>
+                          <div className="text-gray-400 text-xs">{order.customer.email}</div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col space-y-1">
                             {order.items.map((item, idx) => (
                               <div key={idx} className="text-sm text-gray-700">
-                                {item.product.name} ({item.quantity}x)
-                                <div className="text-xs text-gray-500">{item.product.category}</div>
+                                {item.product_name} ({item.quantity}x)
+                                <div className="text-xs text-gray-500">{formatCurrency(item.price)}</div>
                               </div>
                             ))}
                           </div>
@@ -517,7 +509,7 @@ const FinancialDashboard: React.FC = () => {
                           <div className="text-gray-900">{formatCurrency(order.total_price)}</div>
                           {order.discount_percentage && (
                             <div className="text-xs text-green-600">
-                              {formatCurrency(order.original_price)} ({order.discount_percentage}% تخفیف)
+                              {formatCurrency(order.original_price || order.total_price)} ({order.discount_percentage}% تخفیف)
                             </div>
                           )}
                         </td>

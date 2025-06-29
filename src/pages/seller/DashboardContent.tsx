@@ -10,7 +10,7 @@ import {
 import { BsBoxSeam, BsGraphUpArrow } from "react-icons/bs";
 import { MdOutlineAttachMoney, MdOutlineInventory } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
-import { getOrders } from '../../api/orders';
+import { getOrders_seller } from '../../api/orders';
 import { toast } from "react-toastify";
 
 interface OrderItem {
@@ -30,10 +30,11 @@ interface OrderItem {
 }
 
 interface Order {
-  id: number;
-  user: {
+  order_id: number;
+  customer: {
     id: number;
     username: string;
+    email: string;
   };
   items: OrderItem[];
   total_price: number;
@@ -124,16 +125,23 @@ const ProfessionalDashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);  
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const newsales = orders.filter((o)=> o.status === 'completed');
-  const totalSales = newsales.reduce((sum , item)=> sum + item.total_price , 0);
-  const totalstock = products.reduce((sum , item)=> sum + item.stock , 0);
-  const lastMonthSales = orders[newsales.length - 1]?.total_price;
-  const prevMonthSales = orders[newsales.length - 2]?.total_price;
-  const growthRate = ((lastMonthSales / prevMonthSales) * 100).toFixed(1);
   const token = localStorage.getItem("access_token");
   const refresh_token = localStorage.getItem("refresh_token");
-  var totalusers = [];
-  var res_res = 0;
+
+  const completedOrders = orders.filter(order => order.status === 'completed');
+  const totalSales = completedOrders.reduce((sum, order) => sum + order.total_price, 0);
+  const totalStock = products.reduce((sum, product) => sum + product.stock, 0);
+  
+  const uniqueCustomerIds = new Set(orders.map(order => order.customer.id));
+  const totalUniqueCustomers = uniqueCustomerIds.size;
+  
+  let growthRate = 0;
+  if (completedOrders.length >= 2) {
+    const lastMonthSales = completedOrders[completedOrders.length - 1]?.total_price || 0;
+    const prevMonthSales = completedOrders[completedOrders.length - 2]?.total_price || 0;
+    growthRate = prevMonthSales !== 0 ? 
+      ((lastMonthSales - prevMonthSales) / prevMonthSales) * 100 : 0;
+  }
 
   const handlenav = () => {
     navigate("/seller-dashboard/orders");
@@ -143,7 +151,7 @@ const ProfessionalDashboard: React.FC = () => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const fetchedOrders = await getOrders();
+        const fetchedOrders = await getOrders_seller();
         setOrders(fetchedOrders);
         setFilteredOrders(fetchedOrders);
       } catch (error) {
@@ -154,19 +162,6 @@ const ProfessionalDashboard: React.FC = () => {
     };
     fetchOrders();
   }, []);
-
-  for (let i = 0; i < orders.length ; i++) {
-    var res = orders.map((o)=> o.user.id);
-    for (let j = 0; j < res.length ; j++) {
-      if(totalusers.length === 0){
-        totalusers.push(res[0]);
-      }
-      if(res[j] !== res[i]){
-        totalusers.push(res[j]);
-      }
-    }
-    res_res = totalusers.length;
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fa-IR');
@@ -236,8 +231,6 @@ const ProfessionalDashboard: React.FC = () => {
     fetchProducts();
   }, []);
 
-
-
   const renderCustomizedLabel = ({
     cx,
     cy,
@@ -290,15 +283,15 @@ const ProfessionalDashboard: React.FC = () => {
               </div>
             </div>
             <div className="mt-4 flex items-center">
-              <span className={`text-sm flex items-center ${parseFloat(growthRate) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {parseFloat(growthRate) >= 0 ? (
+              <span className={`text-sm flex items-center ${growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {growthRate >= 0 ? (
                   <FiTrendingUp className="ml-1" />
                 ) : (
                   <FiTrendingUp className="ml-1 transform rotate-180" />
                 )}
-                {new Intl.NumberFormat('fa-IR').format(Math.abs(parseFloat(growthRate)))}%
+                {new Intl.NumberFormat('fa-IR').format(Math.abs(growthRate))}%
               </span>
-              <span className="text-gray-500 text-sm mr-1">نسبت به خرید های قبل</span>
+              <span className="text-gray-500 text-sm mr-1">نسبت به ماه قبل</span>
             </div>
           </div>
 
@@ -307,7 +300,7 @@ const ProfessionalDashboard: React.FC = () => {
               <div>
                 <p className="text-gray-500 text-sm">مشتریان</p>
                 <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                  {new Intl.NumberFormat('fa-IR').format(res_res)}
+                  {new Intl.NumberFormat('fa-IR').format(totalUniqueCustomers)}
                   <span className="text-sm font-normal text-gray-500 mr-1">نفر</span>
                 </h3>
               </div>
@@ -319,11 +312,13 @@ const ProfessionalDashboard: React.FC = () => {
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="h-2 rounded-full bg-green-500" 
-                  style={{ width: `${(orders[orders?.length - 1]?.user.id / 200 * 100)}%` }}
+                  style={{ width: `${Math.min((totalUniqueCustomers / 200) * 100, 100)}%` }}
                 ></div>
               </div>
               <p className="text-gray-500 text-sm mt-1">
-                {new Intl.NumberFormat('fa-IR').format((orders[orders?.length - 1]?.user.id / 200) * 100)}% از هدف ماهانه
+                {new Intl.NumberFormat('fa-IR').format(
+                  Math.min((totalUniqueCustomers / 200) * 100, 100)
+                )}% از هدف ماهانه
               </p>
             </div>
           </div>
@@ -361,7 +356,7 @@ const ProfessionalDashboard: React.FC = () => {
               <div>
                 <p className="text-gray-500 text-sm">موجودی انبار</p>
                 <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                  {new Intl.NumberFormat('fa-IR').format(totalstock)}
+                  {new Intl.NumberFormat('fa-IR').format(totalStock)}
                   <span className="text-sm font-normal text-gray-500 mr-1">محصول</span>
                 </h3>
               </div>
@@ -373,9 +368,9 @@ const ProfessionalDashboard: React.FC = () => {
               <div className="flex items-center text-sm">
                 <span className="text-green-600 flex items-center">
                   <BsGraphUpArrow className="ml-1" />
-                  ۸ محصول جدید
+                  {products.length} محصول
                 </span>
-                <span className="text-gray-500 mr-2">در ۷ روز گذشته</span>
+                <span className="text-gray-500 mr-2">در انبار شما</span>
               </div>
             </div>
           </div>
@@ -478,118 +473,6 @@ const ProfessionalDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center mb-6">
-              <FiBarChart2 className="ml-2 text-green-600" size={20} />
-              منابع ترافیک
-            </h2>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={trafficSources}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    innerRadius={40}
-                    paddingAngle={2}
-                    label={renderCustomizedLabel}
-                  >
-                    {trafficSources.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    content={<CustomTooltip />}
-                  />
-                  <Legend 
-                    layout="vertical" 
-                    verticalAlign="middle" 
-                    align="left"
-                    wrapperStyle={{ 
-                      paddingLeft: 20,
-                      fontSize: '0.75rem'
-                    }}
-                    formatter={(value, entry, index) => (
-                      <span className="text-gray-600">
-                        {trafficSources[index]?.name}
-                      </span>
-                    )}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center mb-6">
-              <BsGraphUpArrow className="ml-2 text-blue-600" size={20} />
-              روند فروش و مشتریان
-            </h2>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart 
-                  data={monthlySalesData}
-                  margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
-                >
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ fontSize: 12 }}
-                    axisLine={{ stroke: '#e2e8f0' }}
-                    tickLine={{ stroke: '#e2e8f0' }}
-                  />
-                  <YAxis 
-                    yAxisId="left" 
-                    orientation="left" 
-                    tick={<CustomYAxisTick />}
-                    axisLine={{ stroke: '#e2e8f0' }}
-                    tickLine={{ stroke: '#e2e8f0' }}
-                    width={60}
-                  />
-                  <YAxis 
-                    yAxisId="right" 
-                    orientation="right" 
-                    tick={<CustomYAxisTick />}
-                    axisLine={{ stroke: '#e2e8f0' }}
-                    tickLine={{ stroke: '#e2e8f0' }}
-                    width={60}
-                  />
-                  <Tooltip 
-                    content={<CustomTooltip />}
-                  />
-                  <Legend 
-                    wrapperStyle={{ paddingTop: 20 }}
-                    formatter={(value) => <span className="text-sm text-gray-600">{value}</span>}
-                  />
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="فروش"
-                    stroke="#6366F1"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    name="فروش (هزار تومان)"
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="مشتریان"
-                    stroke="#10B981"
-                    strokeWidth={2}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    name="مشتریان (نفر)"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
           <h2 className="text-lg font-bold text-gray-800 flex items-center mb-6">
             <BsBoxSeam className="ml-2 text-orange-500" size={20} />
@@ -607,32 +490,26 @@ const ProfessionalDashboard: React.FC = () => {
                 </tr>
               </thead>  
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredOrders.map((orders, index) => (
-                  <tr key={index} className="hover:bg-gray-50 transition-colors">
+                {filteredOrders.slice(0, 5).map((order) => (
+                  <tr key={order.order_id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {new Intl.NumberFormat('fa-IR').format(orders.id)}
+                      {new Intl.NumberFormat('fa-IR').format(order.order_id)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{orders.user.username}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(orders.created_at)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.customer.username}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(order.created_at)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Intl.NumberFormat('fa-IR').format(orders.total_price)} تومان
+                      {new Intl.NumberFormat('fa-IR').format(order.total_price)} تومان
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs rounded-full ${
-                        orders.status === "completed" ? "bg-green-100 text-green-800" :
-                        orders.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-                        orders.status === "cancelled" ? "bg-red-100 text-red-800" :
+                        order.status === "completed" ? "bg-green-100 text-green-800" :
+                        order.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                        order.status === "cancelled" ? "bg-red-100 text-red-800" :
                         "bg-red-100 text-red-800"
                       }`}>
-                      {orders.status === "pending" && (
-                        <span>در حال پردازش</span>
-                      )}
-                      {orders.status === "completed" && (
-                        <span>تحویل داده شده</span>
-                      )}
-                      {orders.status === "cancelled" && (
-                        <span>لغو شده</span>
-                      )}
+                        {order.status === "pending" && "در حال پردازش"}
+                        {order.status === "completed" && "تحویل داده شده"}
+                        {order.status === "cancelled" && "لغو شده"}
                       </span>
                     </td>
                   </tr>

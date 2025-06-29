@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { 
   FiUsers, 
-  FiMessageSquare, 
   FiSearch, 
   FiMail,
   FiPhone,
@@ -14,38 +13,25 @@ interface Customer {
   id: number;
   username: string;
   email: string;
-  phone: string;
-  date_joined: string;
+  phone?: string;
+  first_order_date: string;
   status?: string;
-  purchases?: number;
+  order_count: number;
+  total_spent: number;
 }
 
-interface Message {
-  id: number;
-  customer: string;
-  customerId: number;
-  message: string;
-  date: string;
-  status: string;
-  priority: string;
+interface OrderItem {
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  price: number;
+  total_price: number;
 }
 
 interface Order {
-  id: number;
-  user: {
-    id: number;
-    username: string;
-    email: string;
-  };
-  items: Array<{
-    id: number;
-    product: {
-      id: number;
-      name: string;
-    };
-    quantity: number;
-    price: number;
-  }>;
+  order_id: number;
+  customer: Customer;
+  items: OrderItem[];
   total_price: number;
   status: string;
   created_at: string;
@@ -53,61 +39,15 @@ interface Order {
 
 const CustomerManagement: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("customers");
   const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const token = localStorage.getItem("access_token");
-        if (!token) {
-          throw new Error("No access token found");
-        }
-
-        const response = await fetch("http://localhost:8000/api/users/profile/", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch customers");
-        }
-
-        const data = await response.json();
-        
-        const customersWithStatus = Array.isArray(data) 
-          ? data.map((customer: Customer) => ({
-              ...customer,
-              status: getRandomStatus(),
-              purchases: Math.floor(Math.random() * 15) + 1,
-              joinDate: formatDate(customer.date_joined),
-            }))
-          : [{
-              ...data,
-              status: getRandomStatus(),
-              purchases: Math.floor(Math.random() * 15) + 1,
-              joinDate: formatDate(data.date_joined),
-            }];
-          
-        setCustomers(customersWithStatus);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An unknown error occurred");
-        console.error("Error fetching customers:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     const fetchOrders = async () => {
       try {
         const token = localStorage.getItem("access_token");
@@ -115,7 +55,7 @@ const CustomerManagement: React.FC = () => {
           throw new Error("No access token found");
         }
 
-        const response = await fetch("http://localhost:8000/api/orders/", {
+        const response = await fetch("http://localhost:8000/api/orders/by-seller/", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -126,36 +66,46 @@ const CustomerManagement: React.FC = () => {
           throw new Error("Failed to fetch orders");
         }
 
-        const data = await response.json();
-        setOrders(data);
+        const ordersData: Order[] = await response.json();
+        setOrders(ordersData);
+
+        const customersMap = new Map<number, Customer>();
+
+        ordersData.forEach(order => {
+          const customerId = order.customer.id;
+          
+          if (!customersMap.has(customerId)) {
+            customersMap.set(customerId, {
+              ...order.customer,
+              first_order_date: order.created_at,
+              order_count: 1,
+              total_spent: order.total_price,
+              status: "فعال"
+            });
+          } else {
+            const existingCustomer = customersMap.get(customerId)!;
+            customersMap.set(customerId, {
+              ...existingCustomer,
+              order_count: existingCustomer.order_count + 1,
+              total_spent: existingCustomer.total_spent + order.total_price,
+              first_order_date: 
+                new Date(order.created_at) < new Date(existingCustomer.first_order_date) 
+                  ? order.created_at 
+                  : existingCustomer.first_order_date
+            });
+          }
+        });
+
+        setCustomers(Array.from(customersMap.values()));
       } catch (err) {
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
         console.error("Error fetching orders:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchCustomers();
     fetchOrders();
-    
-    setMessages([
-      { 
-        id: 1, 
-        customer: "پوریا رحیمی", 
-        customerId: 1,
-        message: "سلام، محصول کی ارسال می‌شود؟", 
-        date: "۱۴۰۲/۰۷/۰۱", 
-        status: "خوانده نشده",
-        priority: "بالا"
-      },
-      { 
-        id: 2, 
-        customer: "کاربر نمونه", 
-        customerId: 2,
-        message: "آیا تخفیف ویژه‌ای دارید؟", 
-        date: "۱۴۰۲/۰۷/۰۲", 
-        status: "پاسخ داده شده",
-        priority: "متوسط"
-      }
-    ]);
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -163,41 +113,23 @@ const CustomerManagement: React.FC = () => {
     return date.toLocaleDateString('fa-IR');
   };
 
-  const getRandomStatus = () => {
-    const statuses = ["فعال"];
-    return statuses[Math.floor(Math.random() * statuses.length)];
-  };
-
-  const getPurchaseCount = (userId: number) => {
-    return orders.filter(order => order.user.id === userId).length;
+  const getCustomerOrders = (customerId: number) => {
+    return orders.filter(order => order.customer.id === customerId);
   };
 
   const filteredCustomers = customers.filter((customer) =>
     customer.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.phone.includes(searchQuery)
-  );
-
-  const filteredMessages = messages.filter((message) =>
-    message.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    message.message.toLowerCase().includes(searchQuery.toLowerCase())
+    (customer.phone && customer.phone.includes(searchQuery))
   );
 
   const totalCustomers = customers.length;
-  const activeCustomers = customers.length;
-  const unreadMessages = messages.filter(m => m.status === "خوانده نشده").length;
+  const activeCustomers = customers.filter(c => c.status === "فعال").length;
 
   const handleCustomerClick = (customer: Customer) => {
     setSelectedCustomer(customer);
     setShowCustomerModal(true);
   };
-
-  const handleMessageClick = (message: Message) => {
-    setSelectedMessage(message);
-    setShowMessageModal(true);
-  };
-
-
 
   if (loading) {
     return (
@@ -307,7 +239,7 @@ const CustomerManagement: React.FC = () => {
                           </div>
                           <div className="mr-4">
                             <div className="text-sm font-medium text-gray-900">{customer.username}</div>
-                            <div className="text-sm text-gray-500">عضویت: {formatDate(customer.date_joined)}</div>
+                            <div className="text-sm text-gray-500">عضویت: {formatDate(customer.first_order_date)}</div>
                           </div>
                         </div>
                       </td>
@@ -325,7 +257,7 @@ const CustomerManagement: React.FC = () => {
                         <div className="flex items-center">
                           <FiShoppingBag className="ml-2 text-gray-400" />
                           <span className="text-sm font-medium">
-                            {getPurchaseCount(customer.id)} خرید
+                            {customer.order_count} خرید
                           </span>
                         </div>
                       </td>
@@ -347,73 +279,9 @@ const CustomerManagement: React.FC = () => {
             </div>
           </div>
         )}
-
-        {activeTab === 'messages' && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">مشتری</th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاریخ</th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اولویت</th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">وضعیت</th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">عملیات</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredMessages.map((message) => (
-                    <tr key={message.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{message.customer}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 line-clamp-1">{message.message}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{message.date}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          message.priority === "بالا" 
-                            ? "bg-red-100 text-red-800" 
-                            : message.priority === "متوسط" 
-                              ? "bg-yellow-100 text-yellow-800" 
-                              : "bg-gray-100 text-gray-800"
-                        }`}>
-                          {message.priority}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          message.status === "خوانده نشده" 
-                            ? "bg-red-100 text-red-800" 
-                            : message.status === "پاسخ داده شده" 
-                              ? "bg-green-100 text-green-800" 
-                              : "bg-yellow-100 text-yellow-800"
-                        }`}>
-                          {message.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button 
-                          onClick={() => handleMessageClick(message)}
-                          className="text-indigo-600 hover:text-indigo-900 px-3 py-1 border border-indigo-600 rounded-lg"
-                        >
-                          مشاهده و پاسخ
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
       </div>
 
-
-      {showCustomerModal && (
+      {showCustomerModal && selectedCustomer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
@@ -433,32 +301,32 @@ const CustomerManagement: React.FC = () => {
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
                   <div className="relative">
                     <div className="h-24 w-24 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
-                      {selectedCustomer?.username.charAt(0)}
+                      {selectedCustomer.username.charAt(0)}
                     </div>
                     <span className={`absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-white ${
-                      selectedCustomer?.status === "فعال" 
+                      selectedCustomer.status === "فعال" 
                         ? "bg-green-500" 
-                        : 1
+                        : "bg-gray-500"
                     }`}></span>
                   </div>
                   
                   <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-gray-800">{selectedCustomer?.username}</h2>
+                    <h2 className="text-2xl font-bold text-gray-800">{selectedCustomer.username}</h2>
                     <div className="flex flex-wrap items-center gap-3 mt-2">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        selectedCustomer?.status === "فعال" 
+                        selectedCustomer.status === "فعال" 
                           ? "bg-green-100 text-green-800" 
-                          : 1
+                          : "bg-gray-100 text-gray-800"
                       }`}>
-                        {selectedCustomer?.status}
+                        {selectedCustomer.status}
                       </span>
                       <span className="flex items-center text-sm text-gray-600">
                         <FiCalendar className="ml-1" size={14} />
-                        عضویت: {formatDate(selectedCustomer?.date_joined || '')}
+                        اولین خرید: {formatDate(selectedCustomer.first_order_date)}
                       </span>
                       <span className="flex items-center text-sm text-gray-600">
                         <FiShoppingBag className="ml-1" size={14} />
-                        {getPurchaseCount(selectedCustomer?.id || 0)} خرید
+                        {selectedCustomer.order_count} خرید
                       </span>
                     </div>
                   </div>
@@ -485,7 +353,7 @@ const CustomerManagement: React.FC = () => {
                         </div>
                         <div className="mr-3">
                           <p className="text-sm text-gray-500">ایمیل</p>
-                          <p className="text-gray-800">{selectedCustomer?.email}</p>
+                          <p className="text-gray-800">{selectedCustomer.email}</p>
                         </div>
                       </div>
                       
@@ -495,7 +363,7 @@ const CustomerManagement: React.FC = () => {
                         </div>
                         <div className="mr-3">
                           <p className="text-sm text-gray-500">تلفن</p>
-                          <p className="text-gray-800">{selectedCustomer?.phone || 'ثبت نشده'}</p>
+                          <p className="text-gray-800">{selectedCustomer.phone || 'ثبت نشده'}</p>
                         </div>
                       </div>
                     </div>
@@ -508,30 +376,23 @@ const CustomerManagement: React.FC = () => {
                       <div className="bg-white p-3 rounded-lg shadow-sm text-center">
                         <p className="text-sm text-gray-500">تعداد خریدها</p>
                         <p className="text-xl font-bold text-indigo-600 mt-1">
-                          {getPurchaseCount(selectedCustomer?.id || 0)}
+                          {selectedCustomer.order_count}
                         </p>
                       </div>
                       
                       <div className="bg-white p-3 rounded-lg shadow-sm text-center">
                         <p className="text-sm text-gray-500">مبلغ کل</p>
                         <p className="text-xl font-bold text-green-600 mt-1">
-                          {orders
-                            .filter(o => o.user.id === selectedCustomer?.id)
-                            .reduce((sum, order) => sum + order.total_price, 0)
-                            .toLocaleString('fa-IR')} تومان
+                          {selectedCustomer.total_spent.toLocaleString('fa-IR')} تومان
                         </p>
                       </div>
                           
                       <div className="bg-white p-3 rounded-lg shadow-sm text-center">
                         <p className="text-sm text-gray-500">میانگین خرید</p>
                         <p className="text-xl font-bold text-purple-600 mt-1">
-                          {orders.length > 0 && selectedCustomer
-                            ? (
-                                orders
-                                  .filter(o => o.user.id === selectedCustomer.id)
-                                  .reduce((sum, order) => sum + order.total_price, 0) /
-                                orders.filter(o => o.user.id === selectedCustomer.id).length
-                              ).toLocaleString('fa-IR') + ' تومان'
+                          {selectedCustomer.order_count > 0
+                            ? (selectedCustomer.total_spent / selectedCustomer.order_count)
+                                .toLocaleString('fa-IR') + ' تومان'
                             : '0 تومان'}
                         </p>
                       </div>
@@ -539,10 +400,11 @@ const CustomerManagement: React.FC = () => {
                       <div className="bg-white p-3 rounded-lg shadow-sm text-center">
                         <p className="text-sm text-gray-500">آخرین خرید</p>
                         <p className="text-sm font-medium text-gray-800 mt-1">
-                          {orders.length > 0 
-                            ? formatDate(orders
-                                .filter(o => o.user.id === selectedCustomer?.id)
-                                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.created_at || '') 
+                          {selectedCustomer.order_count > 0
+                            ? formatDate(
+                                getCustomerOrders(selectedCustomer.id)
+                                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.created_at || ''
+                              ) 
                             : 'بدون خرید'}
                         </p>
                       </div>
@@ -553,29 +415,40 @@ const CustomerManagement: React.FC = () => {
                     <h4 className="font-medium text-gray-800 mb-4">فعالیت‌های اخیر</h4>
                             
                     <div className="space-y-4">
-                      {orders
-                        .filter(o => o.user.id === selectedCustomer?.id)
+                      {getCustomerOrders(selectedCustomer.id)
                         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                         .slice(0, 3)
                         .map(order => (
-                          <div key={order.id} className="flex items-start pb-4 border-b border-gray-200 last:border-0 last:pb-0">
+                          <div key={order.order_id} className="flex items-start pb-4 border-b border-gray-200 last:border-0 last:pb-0">
                             <div className="bg-white p-2 rounded-lg shadow-sm">
                               <FiShoppingBag className="text-green-500" size={18} />
                             </div>
                             <div className="mr-3 flex-1">
                               <div className="flex justify-between">
-                                <p className="font-medium text-gray-800">سفارش {order.id}</p>
+                                <p className="font-medium text-gray-800">سفارش {order.order_id}</p>
                                 <p className="text-sm text-gray-500">{formatDate(order.created_at)}</p>
                               </div>
                               <p className="text-sm text-gray-600 mt-1">
                                 {order.items.length} آیتم - {order.total_price.toLocaleString('fa-IR')} تومان
                               </p>
-
+                              <p className="text-xs text-gray-500 mt-1">
+                                وضعیت: 
+                                <span className={`px-2 py-1 rounded-full mr-2 ${
+                                  order.status === "completed" 
+                                    ? "bg-green-100 text-green-800" 
+                                    : order.status === "pending" 
+                                      ? "bg-yellow-100 text-yellow-800" 
+                                      : "bg-red-100 text-red-800"
+                                }`}>
+                                  {order.status === "completed" ? "تکمیل شده" : 
+                                   order.status === "pending" ? "در انتظار" : "لغو شده"}
+                                </span>
+                              </p>
                             </div>
                           </div>
                         ))}
                       
-                      {orders.filter(o => o.user.id === selectedCustomer?.id).length === 0 && (
+                      {selectedCustomer.order_count === 0 && (
                         <div className="text-center py-4 text-gray-500">
                           هیچ فعالیتی یافت نشد
                         </div>
@@ -591,42 +464,6 @@ const CustomerManagement: React.FC = () => {
                   >
                     بستن
                   </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-      {showMessageModal && selectedMessage && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">مشتری: {selectedMessage.customer}</h4>
-                  <p className="text-gray-600">تاریخ: {selectedMessage.date}</p>
-                  <div className="mt-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      selectedMessage.status === "خوانده نشده" 
-                        ? "bg-red-100 text-red-800" 
-                        : selectedMessage.status === "پاسخ داده شده" 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-yellow-100 text-yellow-800"
-                    }`}>
-                      وضعیت: {selectedMessage.status}
-                    </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium mr-2 ${
-                      selectedMessage.priority === "بالا" 
-                        ? "bg-red-100 text-red-800" 
-                        : selectedMessage.priority === "متوسط" 
-                          ? "bg-yellow-100 text-yellow-800" 
-                          : "bg-gray-100 text-gray-800"
-                    }`}>
-                      اولویت: {selectedMessage.priority}
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>

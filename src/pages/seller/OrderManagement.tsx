@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getOrders, updateOrderStatus } from '../../api/orders';
+import { getOrders_seller, updateOrderStatus } from '../../api/orders';
 import { toast } from 'react-toastify';
 import IMG from '../../assets/img.jpg';
 import { 
@@ -20,23 +20,14 @@ import {
   FiBox
 } from 'react-icons/fi';
 
-interface Sellers {
-  shop_name: string;
-  seller_id: number;
-  product_id: number;
-}
-
 interface OrderItem {
   id: number;
-  product: {
-    id: number;
-    name: string;
-    image?: string;
-    sellers?: Sellers[];
-  };
+  product_id: number;
+  product_name: string;
   quantity: number;
   price: number;
-  seller: {
+  total_price: number;
+  seller?: {
     id: number;
     shop_name: string;
   };
@@ -48,17 +39,20 @@ interface Discount {
   code: string;
 }
 
-interface Order {
+interface Customer {
   id: number;
-  user: {
-    id: number;
-    username: string;
-  };
-  items: OrderItem[];
-  total_price: number;
-  original_price: number;
+  username: string;
+  email: string;
+}
+
+interface Order {
+  order_id: number;
+  customer: Customer;
   status: 'pending' | 'completed' | 'cancelled' | 'refunded' | 'delivered';
   created_at: string;
+  total_price: number;
+  items: OrderItem[];
+  original_price?: number;
   discount?: Discount;
   discount_percentage?: number;
   discount_code?: string;
@@ -76,7 +70,7 @@ const OrderManagement: React.FC = () => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const fetchedOrders = await getOrders();
+        const fetchedOrders = await getOrders_seller();
         setOrders(fetchedOrders);
         setFilteredOrders(fetchedOrders);
       } catch (error) {
@@ -97,11 +91,11 @@ const OrderManagement: React.FC = () => {
   }, [statusFilter, orders]);
 
   const handleCheckout = async (order: Order) => {
-    setProcessingId(order.id);
+    setProcessingId(order.order_id);
     try {
-      await updateOrderStatus(order.id, 'completed');
-      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'completed' } : o));
-      toast.success(`سفارش #${order.id} با موفقیت تسویه شد`);
+      await updateOrderStatus(order.order_id, 'completed');
+      setOrders(prev => prev.map(o => o.order_id === order.order_id ? { ...o, status: 'completed' } : o));
+      toast.success(`سفارش ${order.order_id} با موفقیت تسویه شد`);
     } catch (error) {
       toast.error('خطا در تسویه حساب سفارش');
     } finally {
@@ -115,8 +109,8 @@ const OrderManagement: React.FC = () => {
     setProcessingId(orderId);
     try {
       await updateOrderStatus(orderId, newStatus);
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-      toast.success(`وضعیت سفارش #${orderId} با موفقیت تغییر یافت`);
+      setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: newStatus } : o));
+      toast.success(`وضعیت سفارش ${orderId} با موفقیت تغییر یافت`);
     } catch (error) {
       toast.error('خطا در تغییر وضعیت سفارش');
     } finally {
@@ -166,6 +160,10 @@ const OrderManagement: React.FC = () => {
         return 'تکمیل شده';
       case 'cancelled':
         return 'لغو شده';
+      case 'delivered':
+        return 'تحویل داده شده';
+      case 'refunded':
+        return 'مرجوعی';
       default:
         return status;
     }
@@ -191,6 +189,8 @@ const OrderManagement: React.FC = () => {
     { value: 'pending', label: 'در انتظار', color: 'bg-amber-100 text-amber-800', icon: <FiRefreshCw size={16} />, count: orders.filter(o => o.status === 'pending').length },
     { value: 'completed', label: 'تکمیل شده', color: 'bg-emerald-100 text-emerald-800', icon: <FiCheckCircle size={16} />, count: orders.filter(o => o.status === 'completed').length },
     { value: 'cancelled', label: 'لغو شده', color: 'bg-rose-100 text-rose-800', icon: <FiXCircle size={16} />, count: orders.filter(o => o.status === 'cancelled').length },
+    { value: 'delivered', label: 'تحویل شده', color: 'bg-violet-100 text-violet-800', icon: <FiTruck size={16} />, count: orders.filter(o => o.status === 'delivered').length },
+    { value: 'refunded', label: 'مرجوعی', color: 'bg-blue-100 text-blue-800', icon: <FiBox size={16} />, count: orders.filter(o => o.status === 'refunded').length },
   ];
 
   return (
@@ -277,16 +277,16 @@ const OrderManagement: React.FC = () => {
           <div className="grid gap-5">
             {filteredOrders.map((order) => {
               const hasDiscount = order.discount_percentage && order.discount_percentage > 0;
-              const discountAmount = hasDiscount ? order.original_price - order.total_price : 0;
+              const discountAmount = hasDiscount && order.original_price ? order.original_price - order.total_price : 0;
               
               return (
                 <div 
-                  key={order.id} 
+                  key={order.order_id} 
                   className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
                 >
                   <div 
                     className="p-4 md:p-6 cursor-pointer transition-colors hover:bg-gray-50"
-                    onClick={() => toggleOrderDetails(order.id)}
+                    onClick={() => toggleOrderDetails(order.order_id)}
                   >
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                       <div className="flex items-start gap-4">
@@ -295,7 +295,7 @@ const OrderManagement: React.FC = () => {
                         </div>
                         <div>
                           <h3 className="font-medium text-gray-800 flex items-center">
-                            سفارش {order.id}
+                            سفارش {order.order_id}
                             <span className={`ml-3 px-2 py-1 text-xs rounded-full ${getStatusColor(order.status)}`}>
                               {getStatusText(order.status)}
                             </span>
@@ -303,7 +303,7 @@ const OrderManagement: React.FC = () => {
                           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                             <p className="text-sm text-gray-500 flex items-center">
                               <FiUser className="ml-1" size={14} />
-                              {order.user.username}
+                              {order.customer.username}
                             </p>
                             <p className="text-sm text-gray-500 flex items-center">
                               <FiCalendar className="ml-1" size={14} />
@@ -325,7 +325,7 @@ const OrderManagement: React.FC = () => {
                       
                       <div className="flex flex-col md:items-end gap-3">
                         <div className="flex flex-col items-end">
-                          {hasDiscount && (
+                          {hasDiscount && order.original_price && (
                             <span className="text-sm text-gray-500 line-through">
                               {order.original_price.toLocaleString('fa-IR')} تومان
                             </span>
@@ -333,7 +333,7 @@ const OrderManagement: React.FC = () => {
                           <span className="font-bold text-gray-800 text-lg">
                             {order.total_price.toLocaleString('fa-IR')} تومان
                           </span>
-                          {hasDiscount && (
+                          {hasDiscount && discountAmount && (
                             <span className="text-xs text-green-600 mt-1">
                               صرفه‌جویی: {discountAmount.toLocaleString('fa-IR')} تومان
                             </span>
@@ -347,12 +347,12 @@ const OrderManagement: React.FC = () => {
                                 e.stopPropagation();
                                 handleCheckout(order);
                               }}
-                              disabled={processingId === order.id}
+                              disabled={processingId === order.order_id}
                               className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg transition-all
-                                ${processingId === order.id ? 'opacity-70 cursor-not-allowed' : ''}
+                                ${processingId === order.order_id ? 'opacity-70 cursor-not-allowed' : ''}
                               `}
                             >
-                              {processingId === order.id ? (
+                              {processingId === order.order_id ? (
                                 <>
                                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -373,11 +373,11 @@ const OrderManagement: React.FC = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleStatusChange(order.id, 'cancelled');
+                                handleStatusChange(order.order_id, 'cancelled');
                               }}
-                              disabled={processingId === order.id}
+                              disabled={processingId === order.order_id}
                               className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all
-                                ${processingId === order.id ? 'opacity-70 cursor-not-allowed' : ''}
+                                ${processingId === order.order_id ? 'opacity-70 cursor-not-allowed' : ''}
                               `}
                             >
                               <FiXCircle className="ml-1" size={16} />
@@ -389,11 +389,11 @@ const OrderManagement: React.FC = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleStatusChange(order.id, 'delivered');
+                                handleStatusChange(order.order_id, 'delivered');
                               }}
-                              disabled={processingId === order.id}
+                              disabled={processingId === order.order_id}
                               className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 shadow-md hover:shadow-lg transition-all
-                                ${processingId === order.id ? 'opacity-70 cursor-not-allowed' : ''}
+                                ${processingId === order.order_id ? 'opacity-70 cursor-not-allowed' : ''}
                               `}
                             >
                               <FiTruck className="ml-1" size={16} />
@@ -405,11 +405,11 @@ const OrderManagement: React.FC = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleStatusChange(order.id, 'refunded');
+                                handleStatusChange(order.order_id, 'refunded');
                               }}
-                              disabled={processingId === order.id}
+                              disabled={processingId === order.order_id}
                               className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all
-                                ${processingId === order.id ? 'opacity-70 cursor-not-allowed' : ''}
+                                ${processingId === order.order_id ? 'opacity-70 cursor-not-allowed' : ''}
                               `}
                             >
                               <FiBox className="ml-1" size={16} />
@@ -421,7 +421,7 @@ const OrderManagement: React.FC = () => {
                     </div>
                     
                     <div className="flex justify-center mt-3">
-                      {expandedOrder === order.id ? (
+                      {expandedOrder === order.order_id ? (
                         <FiChevronUp className="text-gray-400" />
                       ) : (
                         <FiChevronDown className="text-gray-400" />
@@ -429,7 +429,7 @@ const OrderManagement: React.FC = () => {
                     </div>
                   </div>
                   
-                  {expandedOrder === order.id && (
+                  {expandedOrder === order.order_id && (
                     <div className="px-4 pb-4 md:px-6 md:pb-6 animate-fade-in">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -440,7 +440,9 @@ const OrderManagement: React.FC = () => {
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <span className="text-sm text-gray-600">جمع کل سفارش:</span>
-                              <span className="text-sm font-medium">{order.original_price.toLocaleString('fa-IR')} تومان</span>
+                              <span className="text-sm font-medium">
+                                {(order.original_price || order.total_price).toLocaleString('fa-IR')} تومان
+                              </span>
                             </div>
                             
                             {hasDiscount && (
@@ -451,18 +453,20 @@ const OrderManagement: React.FC = () => {
                                     تخفیف:
                                   </span>
                                   <span className="text-sm font-medium text-green-600">
-                                    {discountAmount.toLocaleString('fa-IR')} تومان
+                                    {discountAmount?.toLocaleString('fa-IR')} تومان
                                   </span>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-sm text-gray-600 flex items-center">
-                                    <FiTag className="ml-1 text-blue-500" size={14} />
-                                    کد تخفیف:
-                                  </span>
-                                  <span className="text-sm font-medium bg-blue-50 text-blue-600 px-2 py-1 rounded-md">
-                                    {order.discount_code}
-                                  </span>
-                                </div>
+                                {order.discount_code && (
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm text-gray-600 flex items-center">
+                                      <FiTag className="ml-1 text-blue-500" size={14} />
+                                      کد تخفیف:
+                                    </span>
+                                    <span className="text-sm font-medium bg-blue-50 text-blue-600 px-2 py-1 rounded-md">
+                                      {order.discount_code}
+                                    </span>
+                                  </div>
+                                )}
                               </>
                             )}
                             
@@ -501,19 +505,21 @@ const OrderManagement: React.FC = () => {
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
                                 {order.items.map((item) => (
-                                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                                  <tr key={item.product_id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-4 py-3 whitespace-nowrap">
                                       <div className="flex items-center gap-3">
                                         <div className="flex-shrink-0 h-12 w-12">
                                           <img 
                                             src={IMG} 
-                                            alt={item.product.name}
+                                            alt={item.product_name}
                                             className="h-12 w-12 object-cover rounded-lg"
                                           />
                                         </div>
                                         <div>
-                                          <p className="text-sm font-medium text-gray-800">{item.product.name}</p>
-                                          <p className="text-xs text-gray-500 mt-1">فروشنده: {item.seller.shop_name}</p>
+                                          <p className="text-sm font-medium text-gray-800">{item.product_name}</p>
+                                          {item.seller && (
+                                            <p className="text-xs text-gray-500 mt-1">فروشنده: {item.seller.shop_name}</p>
+                                          )}
                                         </div>
                                       </div>
                                     </td>
@@ -526,7 +532,7 @@ const OrderManagement: React.FC = () => {
                                       {item.price.toLocaleString('fa-IR')} تومان
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 text-sm">
-                                      {(item.price * item.quantity).toLocaleString('fa-IR')} تومان
+                                      {item.total_price.toLocaleString('fa-IR')} تومان
                                     </td>
                                   </tr>
                                 ))}

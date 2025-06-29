@@ -88,7 +88,7 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <div className="text-3xl font-bold text-yellow-400 transition-colors flex items-center">
-            <span className="hidden sm:inline">بیچارم</span>
+            <span className="hidden sm:inline">جوجیک</span>
             <span className="text-4xl">🛒</span>
           </div>
         </div>
