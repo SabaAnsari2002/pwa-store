@@ -391,7 +391,7 @@ const CustomerManagement: React.FC = () => {
                         <p className="text-sm text-gray-500">میانگین خرید</p>
                         <p className="text-xl font-bold text-purple-600 mt-1">
                           {selectedCustomer.order_count > 0
-                            ? (selectedCustomer.total_spent / selectedCustomer.order_count)
+                            ? Math.round(selectedCustomer.total_spent / selectedCustomer.order_count)
                                 .toLocaleString('fa-IR') + ' تومان'
                             : '0 تومان'}
                         </p>

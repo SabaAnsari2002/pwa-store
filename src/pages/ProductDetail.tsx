@@ -10,6 +10,15 @@ import { useCart } from "../contexts/CartContext";
 import { toast } from "react-toastify";
 import { useWishlist } from '../contexts/WishlistContext';
 
+
+interface UserData {
+    id: number;
+    username: string;
+    email: string;
+    phone: string;
+    date_joined: string; 
+}
+
 interface Product {
   id: number;
   name: string;
@@ -33,26 +42,22 @@ interface Product {
 }
 
 interface Seller {
-  seller_id: number;
-  id: number;
-  shop_name: string;
-  phone: string;
-  address: string;
-  description: string;
-  price: number;
-  stock: number;
-  delivery_time: string;
-  rating?: number;
-  logo?: string;
-  discount?: number;
-  product_id: number;
-  seller:{
+  seller: {
     id: number;
-    logo: string;
+    shop_name: string;
+    phone: string;
     address: string;
     description: string;
-    phone: string;
+    logo?: string;
+    min_order_amount: number;
+    is_active: boolean;
+    shipping_methods: any[];
+    payment_gateways: any[];
   };
+  price: number;
+  stock: number;
+  product_id: number;
+  is_own_product: number;
 }
 
 interface Review {
@@ -81,7 +86,7 @@ const ProductDetail: React.FC = () => {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [notification, setNotification] = useState<{ show: boolean, message: string }>({ show: false, message: '' });
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [isSeller, setIsSeller] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [newReview, setNewReview] = useState({
     rating: 5,
     comment: '',
@@ -93,6 +98,40 @@ const ProductDetail: React.FC = () => {
   const findStoreBySellerId = (sellerId: number) => {
     return stores.find(store => store.seller.id === sellerId)?.seller;
   };
+
+
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            const token = localStorage.getItem("access_token");
+            if (!token) {
+                console.error("No access token found");
+                return;
+            }
+
+            try {
+                const response = await fetch("http://localhost:8000/api/users/profile/", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setUserData(data);
+                } else {
+                    const errText = await response.text();
+                    console.error("Failed to fetch user data:", errText);
+                }
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+            }
+        };
+
+        fetchUserData();
+    }, []);
+
 
   useEffect(() => {
     const checkLoginStatus = () => {
@@ -116,26 +155,6 @@ const ProductDetail: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const checkIfSeller = async () => {
-      const token = localStorage.getItem("access_token");
-      if (token) {
-        try {
-          const userRes = await fetch("http://localhost:8000/api/sellers/issellers/", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          });
-          const userData = await userRes.json();
-          setIsSeller(userData?.is_seller || false);
-        } catch (err) {
-          console.error("Error checking seller status:", err);
-        }
-      }
-    };
-    checkIfSeller();
-  }, []);
 
   const fetchComments = async () => {
     try {
@@ -221,45 +240,45 @@ const ProductDetail: React.FC = () => {
     return new Intl.NumberFormat("en-US").format(price);
   };
 
-  const handleAddToCart = (seller: Seller) => {
-    if (!product) return;
+  const handleAddToCart = (store: Seller) => {
+      if (!product) return;
 
-    if (isSeller) {
-      toast.error("شما نمی‌توانید محصول خود را سفارش دهید.");
-      return;
-    }
+      if (store.is_own_product === userData?.id) {
+          toast.error("شما نمی‌توانید محصول خود را سفارش دهید.");
+          return;
+      }
 
-    if (isInCart(seller.product_id, seller.seller_id)) {
-      toast.info("این محصول قبلاً در سبد خرید شما ثبت شده است", {
-        position: "top-center",
-        autoClose: 3000,
+      if (isInCart(store.product_id, store.seller.id)) {
+          toast.info("این محصول قبلاً در سبد خرید شما ثبت شده است", {
+              position: "top-center",
+              autoClose: 3000,
+          });
+          return;
+      }
+
+      if (store.stock <= 0) {
+          toast.error("موجودی این محصول کافی نیست", {
+              position: "top-center",
+              autoClose: 3000,
+          });
+          return;
+      }
+
+      addToCart({
+          productId: store.product_id,
+          sellerId: store.seller.id,
+          name: product.name,
+          price: store.price,
+          image: IMG,
+          storeName: store.seller.shop_name,
+          deliveryTime: "۲ تا ۳ روز کاری",
+          stock: store.stock
       });
-      return;
-    }
 
-    if (seller.stock <= 0) {
-      toast.error("موجودی این محصول کافی نیست", {
-        position: "top-center",
-        autoClose: 3000,
+      setNotification({
+          show: true,
+          message: `${product.name} از ${store.seller.shop_name} به سبد خرید اضافه شد`
       });
-      return;
-    }
-    
-    addToCart({
-      productId: seller.product_id,
-      sellerId: seller.seller_id,
-      name: product.name,
-      price: seller.price,
-      image: IMG,
-      storeName: seller.shop_name,
-      deliveryTime: "۲ تا ۳ روز کاری",
-      stock: seller.stock
-    });
-
-    setNotification({
-      show: true,
-      message: `${product.name} از ${seller.shop_name} به سبد خرید اضافه شد`
-    });
   };
 
 
@@ -695,9 +714,9 @@ const ProductDetail: React.FC = () => {
           </div>
           
           <div className="divide-y divide-gray-200">
-            {product.sellers.map((seller) => (
+            {stores.map((store) => (
               <motion.div
-                key={`${product.id}-${seller.seller_id}`}
+                key={`${store.product_id}-${store.seller.id}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
@@ -705,68 +724,70 @@ const ProductDetail: React.FC = () => {
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center flex-1">
-                      <img
-                        src={findStoreBySellerId(seller.seller_id)?.logo || IMG}
-                        alt={seller.shop_name}
-                        className="w-16 h-16 object-contain rounded-lg border border-gray-200 ml-4"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = IMG;
-                        }}
-                      />
+                    <img
+                      src={store.seller.logo || IMG}
+                      alt={store.seller.shop_name}
+                      className="w-16 h-16 object-contain rounded-lg border border-gray-200 ml-4"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = IMG;
+                      }}
+                    />
                     <div>
-                      <h3 className="font-semibold text-gray-800">{seller.shop_name}</h3>
+                      <h3 className="font-semibold text-gray-800">{store.seller.shop_name}</h3>
                       <div className="flex items-center mt-1">
                         {renderStars(4)}
                         <span className="text-xs text-gray-500 mr-1">({Math.floor(Math.random() * 50) + 10})</span>
                       </div>
-                      <div className={`flex items-center text-xs mt-1 ${seller.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {seller.stock > 0 
-                          ? `${seller.stock} عدد در انبار موجود است`
+                      <div className={`flex items-center text-xs mt-1 ${store.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {store.stock > 0 
+                          ? `${store.stock} عدد در انبار موجود است`
                           : 'موجود نیست - به زودی'}
                       </div>
                       <div className="flex items-center text-xs text-gray-500 mt-1">
                         <FiClock className="ml-1" />
-                        <span>تحویل: {seller.delivery_time || "۲ تا ۳ روز کاری"}</span>
+                        <span>تحویل: {"۲ تا ۳ روز کاری"}</span>
                       </div>
                     </div>
                   </div>
-                        
+
                   <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
                     <div className="text-center">
-                      {seller.discount && (
-                        <div className="text-xs text-gray-500 line-through mb-1">
-                          {formatPrice(seller.price + (seller.price * seller.discount / 100))} تومان
-                        </div>
-                      )}
                       <div className="text-lg font-bold text-[#00296B]">
-                        {formatPrice(seller.price)} تومان
+                        {formatPrice(store.price)} تومان
                       </div>
                     </div>
                     {user && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleAddToCart(seller);
+                          handleAddToCart(store);
                         }}
                         className={`w-[200px] px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center ${
-                          seller.stock > 0
-                            ? isInCart(seller.product_id, seller.seller_id)
+                          store.stock > 0 && (store.is_own_product !== userData?.id)
+                            ? isInCart(store.product_id, store.seller.id)
                               ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
                               : 'bg-[#00296B] hover:bg-blue-900 text-white'
-                            : 'bg-red-100 text-red-800 cursor-not-allowed'
+                            : 'bg-gray-300 text-gray-600 cursor-not-allowed'
                         }`}
-                        disabled={seller.stock <= 0 || isInCart(seller.product_id, seller.seller_id)}
+                        disabled={store.stock <= 0 || isInCart(store.product_id, store.seller.id) || (store.is_own_product === userData?.id)}
                       >
                         <FiShoppingCart className="ml-2" />
-                        {seller.stock > 0 
-                          ? isInCart(seller.product_id, seller.seller_id)
-                            ? 'اضافه شده به سبد'
-                            : 'افزودن به سبد'
-                          : 'ناموجود'}
+                        {store.is_own_product === userData?.id
+                          ? 'محصول شما'
+                          : store.stock > 0 
+                            ? isInCart(store.product_id, store.seller.id)
+                              ? 'اضافه شده به سبد'
+                              : 'افزودن به سبد'
+                            : 'ناموجود'}
                       </button>
                     )}
                   </div>
                 </div>
+                {(store.is_own_product === userData?.id) && (
+                  <div className="text-xs text-red-500 mt-2">
+                    شما به عنوان فروشنده این محصول نمی‌توانید آن را سفارش دهید.
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
