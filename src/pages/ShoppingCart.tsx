@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { checkoutOrder } from '../api/orders';
 import { toast } from 'react-toastify';
 import { applyDiscount } from '../api/discounts';
-
+import IMG from '../assets/img.jpg';
 interface CartItem {
   id: number;
   productId: number;
@@ -110,8 +110,8 @@ const ShoppingCart: React.FC = () => {
   }, [storeGroups, discounts]);
 
   const handleIncreaseQuantity = (item: CartItem) => {
-    if (item.quantity >= item.stock) {
-      toast.error(`موجودی کالای ${item.name} فقط ${item.stock} عدد است`, {
+    if (item.quantity >= item.product_stock) {
+      toast.error(`موجودی کالای ${item.name} فقط ${item.product_stock} عدد است`, {
         position: "top-center",
         rtl: true,
       });
@@ -228,7 +228,7 @@ const ShoppingCart: React.FC = () => {
     const storeGroup = storeGroups.find(g => g.storeId === storeId);
     if (!storeGroup) return;
 
-    const outOfStockItems = storeItems.filter(item => item.quantity > item.stock);
+    const outOfStockItems = storeItems.filter(item => item.quantity > item.product_stock);
     if (outOfStockItems.length > 0) {
       toast.error(`بعضی از محصولات فروشگاه ${storeGroup.storeName} موجودی کافی ندارند`, {
         position: "top-center",
@@ -346,7 +346,7 @@ const ShoppingCart: React.FC = () => {
             <h1 className="text-2xl md:text-3xl font-bold text-[#1e293b]">سبد خرید شما</h1>
             {totalItems > 0 && (
               <span className="bg-[#3b82f6] text-white text-sm px-3 py-1 rounded-full mr-3">
-                {totalItems} کالا
+                {totalItems.toLocaleString('fa-IR')} کالا
               </span>
             )}
           </div>
@@ -387,7 +387,7 @@ const ShoppingCart: React.FC = () => {
                 const discount = discounts[group.storeId]?.isValid ? discounts[group.storeId].percentage : 0;
                 const finalTotal = storeTotal * (1 - discount / 100);
                 const storeError = checkoutErrors[group.storeId];
-                const hasStoreStockIssue = group.items.some(item => item.quantity > item.stock);
+                const hasStoreStockIssue = group.items.some(item => item.quantity > item.product_stock);
 
                 return (
                   <motion.div
@@ -494,7 +494,7 @@ const ShoppingCart: React.FC = () => {
                         >
                           <div className="relative">
                             <img
-                              src={item.image || '/images/placeholder-product.jpg'}
+                              src={item.image || IMG}
                               alt={item.name}
                               className="w-24 h-24 object-contain rounded-xl border border-gray-200 ml-4"
                             />
@@ -510,16 +510,16 @@ const ShoppingCart: React.FC = () => {
                               <FiTruck className="ml-1" size={14} />
                               <span>تحویل تا {item.deliveryTime || "۲ تا ۳ روز کاری"}</span>
                             </div>
-                            {item.quantity > item.stock && (
+                            {item.quantity > item.product_stock && (
                               <div className="text-xs text-red-500 mt-1 flex items-center">
                                 <svg className="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                 </svg>
-                                تعداد انتخابی بیشتر از موجودی است (موجودی: {item.stock})
+                                تعداد انتخابی بیشتر از موجودی است (موجودی: {item.product_stock})
                               </div>
                             )}
                             <div className="mt-3 text-lg font-bold text-[#1e293b]">
-                              {(item.price * item.quantity).toLocaleString()} تومان
+                              {(item.price * item.quantity).toLocaleString('fa-IR')} تومان
                             </div>
                           </div>
                           <div className="flex items-center">
@@ -564,15 +564,15 @@ const ShoppingCart: React.FC = () => {
                         {discounts[group.storeId]?.isValid ? (
                           <>
                             <div className="text-sm text-gray-500 line-through">
-                              {storeTotal.toLocaleString()} تومان
+                              {storeTotal.toLocaleString('fa-IR')} تومان
                             </div>
                             <div className="text-xl font-bold text-[#1e40af]">
-                              {finalTotal.toLocaleString()} تومان
+                              {finalTotal.toLocaleString('fa-IR')} تومان
                             </div>
                           </>
                         ) : (
                           <div className="text-xl font-bold text-[#1e40af]">
-                            {storeTotal.toLocaleString()} تومان
+                            {storeTotal.toLocaleString('fa-IR')} تومان
                           </div>
                         )}
                       </div>
@@ -620,24 +620,24 @@ const ShoppingCart: React.FC = () => {
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">تعداد کالاها:</span>
-                  <span className="font-medium">{totalItems}</span>
+                  <span className="font-medium">{totalItems.toLocaleString('fa-IR')}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">جمع کل:</span>
-                  <span className="font-medium">{totalPrice.toLocaleString()} تومان</span>
+                  <span className="font-medium">{totalPrice.toLocaleString('fa-IR')} تومان</span>
                 </div>
                 {calculateTotalDiscount() > 0 && (
                   <div className="flex justify-between items-center text-green-600">
                     <span>تخفیف:</span>
                     <span className="font-medium">
-                      {calculateTotalDiscount().toLocaleString()} تومان
+                      {calculateTotalDiscount().toLocaleString('fa-IR')} تومان
                     </span>
                   </div>
                 )}
                 <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
                   <span className="text-gray-800 font-bold">مبلغ قابل پرداخت:</span>
                   <span className="text-xl font-bold text-[#1e40af]">
-                    {Object.values(storeTotals).reduce((sum, total) => sum + total, 0).toLocaleString()} تومان
+                    {Object.values(storeTotals).reduce((sum, total) => sum + total, 0).toLocaleString('fa-IR')} تومان
                   </span>
                 </div>
               </div>

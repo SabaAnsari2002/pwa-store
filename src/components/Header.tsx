@@ -48,6 +48,7 @@ const Header: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
+    localStorage.clear();
     localStorage.removeItem("user");
     localStorage.removeItem("isSeller");
     localStorage.removeItem("access_token"); 
@@ -56,6 +57,7 @@ const Header: React.FC = () => {
     setIsSeller(false);
     
     navigate("/", { replace: true });
+    window.location.reload();
   };
 
   const handleSellerLogout = () => {
@@ -82,6 +84,7 @@ const Header: React.FC = () => {
   const goToSellerDashboard = () => {
     navigate("/seller-dashboard");
   };
+
 
   return (
     <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white shadow-lg fixed top-0 left-0 w-full z-50" style={{ direction: "rtl" }}>
@@ -136,7 +139,18 @@ const Header: React.FC = () => {
               {dropdownOpen && (
                 <div className="absolute top-12 left-0 bg-white text-gray-800 shadow-xl rounded-lg p-2 w-56 text-right z-50 border border-gray-200 animate-fadeIn">
                   <div className="px-3 py-2 border-b border-gray-100">
-                    <p className="font-medium text-sm truncate">{user}</p>
+                   {user ? (
+                      <>
+                        <p className="font-medium text-sm truncate">{user}</p>
+                        <p className="text-xs text-gray-500">مشتری عزیز، خوش آمدید</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium text-sm text-gray-500">خوش آمدید</p>
+                        <p className="text-xs text-gray-400">لطفا وارد شوید</p>
+                      </>
+                    )}
+
                     <p className="text-xs text-gray-500">مشتری عزیز، خوش آمدید</p>
                   </div>
                   
