@@ -19,31 +19,30 @@ import { toast } from 'react-toastify';
 import { applyDiscount } from '../api/discounts';
 
 interface CartItem {
+  id: number;
   productId: number;
   sellerId: number;
   name: string;
   price: number;
   quantity: number;
-  image: string;
+  image: string | null;
   deliveryTime?: string;
-  stock: number;
+  product_stock: number;
   storeName: string;
 }
 
-interface GroupedItems {
-  [storeId: number]: {
-    storeName: string;
-    items: CartItem[];
-  };
+interface StoreGroup {
+  storeId: number;
+  storeName: string;
+  items: CartItem[];
 }
 
 const ShoppingCart: React.FC = () => {
   const {
-    cartItems,
+    cart,
+    loading,
+    updateCartItem: updateQuantity,
     removeFromCart,
-    updateQuantity,
-    totalItems,
-    totalPrice,
     clearCart
   } = useCart();
   
@@ -51,44 +50,79 @@ const ShoppingCart: React.FC = () => {
   const navigate = useNavigate();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [discountCodes, setDiscountCodes] = useState<Record<number, string>>({});
-  const [discounts, setDiscounts] = useState<Record<number, number>>({});
+  const [discounts, setDiscounts] = useState<Record<number, {percentage: number, isValid: boolean}>>({});
   const [storeTotals, setStoreTotals] = useState<Record<number, number>>({});
   const [checkoutErrors, setCheckoutErrors] = useState<Record<number, string>>({});
+  const [stockErrors, setStockErrors] = useState<Record<number, boolean>>({});
 
-  useEffect(() => {
-    const calculateStoreTotals = () => {
-      const newStoreTotals: Record<number, number> = {};
-      const grouped = groupItemsByStore();
-      
-      Object.entries(grouped).forEach(([storeId, group]) => {
-        const storeTotal = group.items.reduce(
-          (sum, item) => sum + item.price * item.quantity,
-          0
-        );
-        const discount = discounts[Number(storeId)] || 0;
-        newStoreTotals[Number(storeId)] = storeTotal * (1 - discount / 100);
-      });
-      
-      return newStoreTotals;
-    };
+  const [storeGroups, totalItems, totalPrice] = React.useMemo(() => {
+    if (!cart?.items) return [[], 0, 0];
 
-    setStoreTotals(calculateStoreTotals());
-  }, [cartItems, discounts]);
-
-  const groupItemsByStore = (): GroupedItems => {
-    const grouped: GroupedItems = {};
+    const groupsMap: Record<number, StoreGroup> = {};
+    const newStockErrors: Record<number, boolean> = {};
     
-    cartItems.forEach(item => {
-      if (!grouped[item.sellerId]) {
-        grouped[item.sellerId] = {
-          storeName: item.storeName,
-          items: [],
+    cart.items.forEach(item => {
+      if (!groupsMap[item.seller_id]) {
+        groupsMap[item.seller_id] = {
+          storeId: item.seller_id,
+          storeName: item.store_name,
+          items: []
         };
       }
-      grouped[item.sellerId].items.push(item);
+
+      
+      const hasStockError = item.quantity > (item.product_stock || 100);
+      newStockErrors[item.id] = hasStockError;
+      
+      groupsMap[item.seller_id].items.push({
+        id: item.id,
+        productId: item.product_id,
+        sellerId: item.seller_id,
+        name: item.product_name,
+        price: item.product_price,
+        quantity: item.quantity,
+        image: item.product_image,
+        stock: item.product_stock || 100,
+        storeName: item.store_name,
+        deliveryTime: "۲ تا ۳ روز کاری"
+      });
     });
     
-    return grouped;
+    setStockErrors(newStockErrors);
+    return [Object.values(groupsMap), cart.total_items, cart.total_price];
+  }, [cart]);
+
+  const hasStockIssues = Object.values(stockErrors).some(error => error);
+
+  useEffect(() => {
+    const newStoreTotals: Record<number, number> = {};
+    
+    storeGroups.forEach(group => {
+      const storeTotal = group.items.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+      const discount = discounts[group.storeId]?.isValid ? discounts[group.storeId].percentage : 0;
+      newStoreTotals[group.storeId] = storeTotal * (1 - discount / 100);
+    });
+    
+    setStoreTotals(newStoreTotals);
+  }, [storeGroups, discounts]);
+
+  const handleIncreaseQuantity = (item: CartItem) => {
+    if (item.quantity >= item.stock) {
+      toast.error(`موجودی کالای ${item.name} فقط ${item.stock} عدد است`, {
+        position: "top-center",
+        rtl: true,
+      });
+      return;
+    }
+    updateQuantity(item.id, item.quantity + 1);
+  };
+
+  const handleDecreaseQuantity = (item: CartItem) => {
+    if (item.quantity <= 1) return;
+    updateQuantity(item.id, item.quantity - 1);
   };
 
   const handleApplyDiscount = async (storeId: number) => {
@@ -103,14 +137,10 @@ const ShoppingCart: React.FC = () => {
     }
 
     try {
-      const hasStoreItems = cartItems.some(item => item.sellerId === storeId);
+      const storeGroup = storeGroups.find(g => g.storeId === storeId);
+      if (!storeGroup) throw new Error("فروشگاه مورد نظر یافت نشد");
 
-      if (!hasStoreItems) {
-        throw new Error("این کد تخفیف برای محصولات این فروشگاه قابل استفاده نیست");
-      }
-
-      const storeItems = cartItems.filter(item => item.sellerId === storeId);
-      const storeTotal = storeItems.reduce(
+      const storeTotal = storeGroup.items.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
       );
@@ -119,10 +149,10 @@ const ShoppingCart: React.FC = () => {
 
       setDiscounts(prev => ({
         ...prev,
-        [storeId]: discount.percentage,
+        [storeId]: {percentage: discount.percentage, isValid: true},
       }));
 
-      toast.success(`تخفیف ${discount.percentage}% با موفقیت اعمال شد`, {
+      toast.success(`تخفیف ${discount.percentage}% برای فروشگاه ${storeGroup.storeName} اعمال شد`, {
         position: "top-center",
         autoClose: 5000,
         rtl: true,
@@ -143,8 +173,13 @@ const ShoppingCart: React.FC = () => {
         return newDiscounts;
       });
 
-      let errorMessage = "خطا در اعمال کد تخفیف";
+      setDiscountCodes(prev => {
+        const newCodes = {...prev};
+        delete newCodes[storeId];
+        return newCodes;
+      });
 
+      let errorMessage = "خطا در اعمال کد تخفیف";
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
       } else if (error.message) {
@@ -190,18 +225,12 @@ const ShoppingCart: React.FC = () => {
       return;
     }
 
+    const storeGroup = storeGroups.find(g => g.storeId === storeId);
+    if (!storeGroup) return;
+
     const outOfStockItems = storeItems.filter(item => item.quantity > item.stock);
     if (outOfStockItems.length > 0) {
-      toast.error(`بعضی از محصولات فروشگاه ${storeItems[0].storeName} موجودی کافی ندارند`, {
-        position: "top-center",
-        rtl: true,
-      });
-      return;
-    }
-
-    const discountCode = discountCodes[storeId];
-    if (discountCode && checkoutErrors[storeId]) {
-      toast.error(`کد تخفیف برای فروشگاه ${storeItems[0].storeName} معتبر نیست`, {
+      toast.error(`بعضی از محصولات فروشگاه ${storeGroup.storeName} موجودی کافی ندارند`, {
         position: "top-center",
         rtl: true,
       });
@@ -211,22 +240,21 @@ const ShoppingCart: React.FC = () => {
     setIsCheckingOut(true);
 
     try {
+      const discountCode = discounts[storeId]?.isValid ? discountCodes[storeId] : null;
+
       const order = await checkoutOrder(
         storeItems.map(item => ({
           product_id: item.productId,
           seller_id: item.sellerId,
           quantity: item.quantity,
-          discount_code: discountCodes[item.sellerId] || null,
+          discount_code: discountCode
         }))
       );
     
-      storeItems.forEach(item => {
-        removeFromCart(item.productId, item.sellerId);
-      });
-    
+      storeItems.forEach(item => removeFromCart(item.id));
       handleRemoveDiscount(storeId);
     
-      toast.success(`سفارش #${order.id} از فروشگاه ${storeItems[0].storeName} با موفقیت ثبت شد!`, {
+      toast.success(`سفارش #${order.id} از فروشگاه ${storeGroup.storeName} با موفقیت ثبت شد!`, {
         position: "top-center",
         autoClose: 5000,
         rtl: true,
@@ -238,29 +266,16 @@ const ShoppingCart: React.FC = () => {
       console.error('خطا در ثبت سفارش:', error);
 
       let errorMessage = "خطا در ثبت سفارش";
-
       if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
-
-        if (errorMessage.includes("insufficient stock")) {
-          errorMessage = "بعضی از محصولات موجودی کافی ندارند";
-        } else if (errorMessage.includes("invalid discount")) {
-          errorMessage = "کد تخفیف معتبر نیست";
-          handleRemoveDiscount(storeId);
-        }
       } else if (error.message) {
         errorMessage = error.message;
       }
 
-      toast.error(`خطا در پرداخت فروشگاه ${storeItems[0].storeName}: ${errorMessage}`, {
+      toast.error(`خطا در پرداخت فروشگاه ${storeGroup.storeName}: ${errorMessage}`, {
         position: "top-center",
         rtl: true,
       });
-
-      setCheckoutErrors(prev => ({
-        ...prev,
-        [storeId]: errorMessage
-      }));
 
       throw error;
     } finally {
@@ -275,14 +290,13 @@ const ShoppingCart: React.FC = () => {
     }
 
     setIsCheckingOut(true);
-    const groupedItems = groupItemsByStore();
     const results = [];
     let hasError = false;
 
     try {
-      for (const [storeId, group] of Object.entries(groupedItems)) {
+      for (const group of storeGroups) {
         try {
-          const result = await handleStoreCheckout(Number(storeId), group.items);
+          const result = await handleStoreCheckout(group.storeId, group.items);
           results.push(result);
         } catch (error) {
           hasError = true;
@@ -312,8 +326,6 @@ const ShoppingCart: React.FC = () => {
     return totalPrice - Object.values(storeTotals).reduce((sum, total) => sum + total, 0);
   };
 
-  const groupedItems = groupItemsByStore();
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -340,7 +352,7 @@ const ShoppingCart: React.FC = () => {
           </div>
         </div>
 
-        {cartItems.length === 0 ? (
+        {storeGroups.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -367,19 +379,19 @@ const ShoppingCart: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              {Object.entries(groupedItems).map(([storeId, group]) => {
-                const storeIdNum = Number(storeId);
+              {storeGroups.map(group => {
                 const storeTotal = group.items.reduce(
                   (sum, item) => sum + item.price * item.quantity,
                   0
                 );
-                const discount = discounts[storeIdNum] || 0;
+                const discount = discounts[group.storeId]?.isValid ? discounts[group.storeId].percentage : 0;
                 const finalTotal = storeTotal * (1 - discount / 100);
-                const storeError = checkoutErrors[storeIdNum];
+                const storeError = checkoutErrors[group.storeId];
+                const hasStoreStockIssue = group.items.some(item => item.quantity > item.stock);
 
                 return (
                   <motion.div
-                    key={storeId}
+                    key={group.storeId}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-white rounded-2xl shadow-sm overflow-hidden"
@@ -402,6 +414,17 @@ const ShoppingCart: React.FC = () => {
                       </div>
                     )}
 
+                    {hasStoreStockIssue && (
+                      <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+                        <div className="flex items-center text-yellow-700">
+                          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          <span className="font-medium">بعضی از محصولات این فروشگاه موجودی کافی ندارند</span>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="p-5 border-b border-gray-100">
                       <motion.div 
                         className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 shadow-inner"
@@ -413,18 +436,18 @@ const ShoppingCart: React.FC = () => {
                             <FiTag className="ml-1 text-blue-600" />
                             کد تخفیف {group.storeName}
                           </h3>
-                          {discounts[storeIdNum] ? (
+                          {discounts[group.storeId]?.isValid && (
                             <button
-                              onClick={() => handleRemoveDiscount(storeIdNum)}
+                              onClick={() => handleRemoveDiscount(group.storeId)}
                               className="text-xs bg-red-100 hover:bg-red-200 text-red-600 px-2 py-1 rounded-full flex items-center transition-colors"
                             >
                               <FiX size={12} className="ml-1" />
                               حذف تخفیف
                             </button>
-                          ) : null}
+                          )}
                         </div>
 
-                        {discounts[storeIdNum] ? (
+                        {discounts[group.storeId]?.isValid ? (
                           <motion.div
                             initial={{ scale: 0.9 }}
                             animate={{ scale: 1 }}
@@ -435,7 +458,7 @@ const ShoppingCart: React.FC = () => {
                                 <span className="font-medium">{discount}% تخفیف اعمال شد</span>
                               </div>
                               <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                                {discountCodes[storeIdNum]}
+                                {discountCodes[group.storeId]}
                               </span>
                             </div>
                           </motion.div>
@@ -443,16 +466,16 @@ const ShoppingCart: React.FC = () => {
                           <div className="flex space-x-2">
                             <input
                               type="text"
-                              value={discountCodes[storeIdNum] || ''}
+                              value={discountCodes[group.storeId] || ''}
                               onChange={(e) => setDiscountCodes(prev => ({
                                 ...prev,
-                                [storeIdNum]: e.target.value,
+                                [group.storeId]: e.target.value,
                               }))}
                               className="flex-1 rounded-r-lg border border-gray-300 px-4 py-2 focus:outline-none focus:border-transparent text-sm"
                               placeholder="کد تخفیف را وارد کنید"
                             />
                             <button
-                              onClick={() => handleApplyDiscount(storeIdNum)}
+                              onClick={() => handleApplyDiscount(group.storeId)}
                               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-l-lg transition-colors text-sm whitespace-nowrap"
                             >
                               اعمال کد
@@ -471,12 +494,9 @@ const ShoppingCart: React.FC = () => {
                         >
                           <div className="relative">
                             <img
-                              src={item.image}
+                              src={item.image || '/images/placeholder-product.jpg'}
                               alt={item.name}
                               className="w-24 h-24 object-contain rounded-xl border border-gray-200 ml-4"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/images/placeholder-product.jpg';
-                              }}
                             />
                             {item.quantity > 1 && (
                               <span className="absolute -top-2 -right-2 bg-[#3b82f6] text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full">
@@ -505,13 +525,7 @@ const ShoppingCart: React.FC = () => {
                           <div className="flex items-center">
                             <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden">
                               <button
-                                onClick={() =>
-                                  updateQuantity(
-                                    item.productId,
-                                    item.sellerId,
-                                    item.quantity - 1
-                                  )
-                                }
+                                onClick={() => handleDecreaseQuantity(item)}
                                 className="px-3 py-2 bg-gray-100 hover:bg-gray-200 transition-colors"
                                 disabled={item.quantity <= 1}
                               >
@@ -519,13 +533,7 @@ const ShoppingCart: React.FC = () => {
                               </button>
                               <span className="px-3 py-1 bg-white w-10 text-center">{item.quantity}</span>
                               <button
-                                onClick={() =>
-                                  updateQuantity(
-                                    item.productId,
-                                    item.sellerId,
-                                    item.quantity + 1
-                                  )
-                                }
+                                onClick={() => handleIncreaseQuantity(item)}
                                 className={`px-3 py-2 ${
                                   item.quantity >= item.stock
                                     ? 'bg-gray-200 cursor-not-allowed'
@@ -537,9 +545,7 @@ const ShoppingCart: React.FC = () => {
                               </button>
                             </div>
                             <button
-                              onClick={() =>
-                                removeFromCart(item.productId, item.sellerId)
-                              }
+                              onClick={() => removeFromCart(item.id)}
                               className="p-2 text-red-500 hover:text-red-700 mr-2 transition-colors"
                             >
                               <FiTrash2 className="w-5 h-5" />
@@ -555,7 +561,7 @@ const ShoppingCart: React.FC = () => {
                         <span className="text-gray-700 font-medium">جمع این فروشگاه:</span>
                       </div>
                       <div className="flex flex-col items-end">
-                        {discount > 0 && (
+                        {discounts[group.storeId]?.isValid ? (
                           <>
                             <div className="text-sm text-gray-500 line-through">
                               {storeTotal.toLocaleString()} تومان
@@ -564,8 +570,7 @@ const ShoppingCart: React.FC = () => {
                               {finalTotal.toLocaleString()} تومان
                             </div>
                           </>
-                        )}
-                        {discount === 0 && (
+                        ) : (
                           <div className="text-xl font-bold text-[#1e40af]">
                             {storeTotal.toLocaleString()} تومان
                           </div>
@@ -575,13 +580,13 @@ const ShoppingCart: React.FC = () => {
                     
                     <div className="p-5 border-t border-gray-200">
                       <button
-                        onClick={() => handleStoreCheckout(Number(storeId), group.items)}
-                        disabled={isCheckingOut}
+                        onClick={() => handleStoreCheckout(group.storeId, group.items)}
+                        disabled={isCheckingOut || loading || hasStoreStockIssue}
                         className={`w-full bg-gradient-to-r from-[#10b981] to-[#059669] hover:from-[#059669] hover:to-[#047857] text-white font-bold py-3 px-4 rounded-xl transition-all ${
-                          isCheckingOut ? 'opacity-80 cursor-not-allowed' : 'shadow-md hover:shadow-lg'
+                          (isCheckingOut || loading || hasStoreStockIssue) ? 'opacity-80 cursor-not-allowed' : 'shadow-md hover:shadow-lg'
                         }`}
                       >
-                        {isCheckingOut ? (
+                        {(isCheckingOut || loading) ? (
                           <span className="flex items-center justify-center">
                             <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -640,9 +645,9 @@ const ShoppingCart: React.FC = () => {
               <button 
                 className="w-full bg-gradient-to-r from-[#f59e0b] to-[#f97316] hover:from-[#f97316] hover:to-[#ea580c] text-white py-3 px-4 rounded-xl font-bold shadow-md hover:shadow-lg transition-all"
                 onClick={handleCheckoutAll}
-                disabled={isCheckingOut || Object.keys(checkoutErrors).length > 0}
+                disabled={isCheckingOut || loading || hasStockIssues}
               >
-                {isCheckingOut ? (
+                {(isCheckingOut || loading) ? (
                   <span className="flex items-center justify-center">
                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -650,9 +655,19 @@ const ShoppingCart: React.FC = () => {
                     </svg>
                     در حال پردازش...
                   </span>
+                ) : hasStockIssues ? (
+                  'موجودی برخی کالاها ناکافی است'
                 ) : (
                   'پرداخت همه سفارش‌ها'
                 )}
+              </button>
+
+              <button 
+                onClick={clearCart}
+                disabled={isCheckingOut || loading}
+                className="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 px-4 rounded-xl font-medium transition-all"
+              >
+                خالی کردن سبد خرید
               </button>
 
               <div className="mt-6 pt-4 border-t border-gray-200">

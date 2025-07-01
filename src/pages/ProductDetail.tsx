@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getProductById, getSellersByProductId } from "../api/products";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, number } from "framer-motion";
 import { FiStar, FiChevronLeft, FiShoppingCart, FiHeart, FiShare2, FiClock, FiCheckCircle, FiThumbsUp, FiThumbsDown, FiUser } from "react-icons/fi";
 import IMG from "../assets/img.jpg";
 import USER from "../assets/user.jpg";
@@ -264,16 +264,7 @@ const ProductDetail: React.FC = () => {
           return;
       }
 
-      addToCart({
-          productId: store.product_id,
-          sellerId: store.seller.id,
-          name: product.name,
-          price: store.price,
-          image: IMG,
-          storeName: store.seller.shop_name,
-          deliveryTime: "۲ تا ۳ روز کاری",
-          stock: store.stock
-      });
+      addToCart(store.product_id, store.seller?.id, store);
 
       setNotification({
           show: true,
