@@ -151,7 +151,6 @@ const Header: React.FC = () => {
                       </>
                     )}
 
-                    <p className="text-xs text-gray-500">مشتری عزیز، خوش آمدید</p>
                   </div>
                   
                   <button 
