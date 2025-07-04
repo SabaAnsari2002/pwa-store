@@ -30,7 +30,7 @@ const About: React.FC = () => {
                                 داستان ما، <span className="text-[#FDC500]">ارزش‌های ما</span>
                             </h1>
                             <p className="text-lg text-gray-300 mb-8">
-                                پروژه <span className="font-bold text-white">جوجک</span> با هدف ایجاد بستری امن، سریع و آسان برای خرید و فروش آنلاین راه‌اندازی شده است. ما معتقدیم که خرید اینترنتی باید ساده، مطمئن و لذت‌بخش باشد.
+                                پروژه <span className="font-bold text-white">گروشا</span> با هدف ایجاد بستری امن، سریع و آسان برای خرید و فروش آنلاین راه‌اندازی شده است. ما معتقدیم که خرید اینترنتی باید ساده، مطمئن و لذت‌بخش باشد.
                             </p>
                             <button className="bg-[#FDC500] hover:bg-[#ffd524] text-[#00296B] font-bold py-3 px-6 rounded-lg transition duration-300 shadow-lg">
                                 تماس با ما
