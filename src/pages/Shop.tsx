@@ -93,7 +93,6 @@ const Shop: React.FC = () => {
                         </div>
                     </aside>
 
-                    {/* Main Content */}
                     <main className="lg:w-4/5">
                         {searchedCategories.length > 0 ? (
                             <div className="space-y-6">

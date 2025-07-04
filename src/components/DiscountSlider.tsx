@@ -18,18 +18,15 @@ const products: Product[] = [
 const DiscountSlider: React.FC = () => {
     return (
         <div className="bg-gray-300 p-4 rounded-xl flex items-center justify-between">
-            {/* دکمه نمایش بیشتر */}
             <button className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center">
                 <FaArrowLeft className="ml-2" />
                 بیش از 100 کالا
             </button>
 
-            {/* متن شگفت‌انگیز */}
             <div className="bg-yellow-400 text-white text-lg font-bold px-4 py-2 rounded-lg">
                 🎉 تخفیف‌های شگفت‌انگیز امروز! 🎉
             </div>
 
-            {/* لیست محصولات */}
             <div className="flex gap-2">
                 {products.map((product) => (
                     <div key={product.id} className="relative">

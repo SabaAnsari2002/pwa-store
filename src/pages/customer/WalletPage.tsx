@@ -161,7 +161,6 @@ const WalletPage: React.FC = () => {
 
     const formatCardNumber = (cardNumber: string): string => {
         const cleaned = cardNumber.replace(/\D/g, "");
-        // Group from right (like Persian language direction)
         const groups = [];
         for (let i = cleaned.length; i > 0; i -= 4) {
             groups.push(cleaned.slice(Math.max(0, i - 4), i));
@@ -209,7 +208,6 @@ const WalletPage: React.FC = () => {
     return (
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen p-4 md:p-8" style={{ direction: 'rtl' }}>
             <div className="max-w-6xl mx-auto">
-                {/* هدر صفحه */}
                 <div className="mb-8 text-center">
                     <h1 className="text-3xl md:text-4xl font-bold text-[#1e3a8a] flex items-center justify-center">
                         <FiCreditCard className="ml-2 text-[#3b82f6]" size={32} />
@@ -220,9 +218,7 @@ const WalletPage: React.FC = () => {
                     </p>
                 </div>
 
-                {/* بخش اصلی */}
                 <div className="space-y-6">
-                    {/* کارت موجودی کیف پول */}
                     <div className="bg-gradient-to-r from-[#1e3a8a] to-[#3b82f6] rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-white"></div>
                         <div className="relative z-10">
@@ -241,13 +237,6 @@ const WalletPage: React.FC = () => {
                             </div>
                             <div className="flex flex-col md:flex-row gap-4">
                                 <button
-                                    onClick={handleChargeWallet}
-                                    className="flex-1 bg-white text-[#1e3a8a] hover:bg-gray-100 px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:shadow-md flex items-center justify-center gap-2"
-                                >
-                                    <FiDollarSign size={18} />
-                                    شارژ کیف پول
-                                </button>
-                                <button
                                     onClick={() => setIsAdding(true)}
                                     className="flex-1 bg-white/10 hover:bg-white/20 border border-white/30 px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:shadow-md flex items-center justify-center gap-2"
                                 >
@@ -258,7 +247,6 @@ const WalletPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* پیام خطا */}
                     {error && (
                         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg">
                             <div className="flex items-center">
@@ -270,7 +258,6 @@ const WalletPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* لیست کارت‌های بانکی */}
                     <div className="bg-white rounded-2xl shadow-md overflow-hidden">
                         <div className="p-6 border-b border-gray-200">
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -369,7 +356,6 @@ const WalletPage: React.FC = () => {
                         )}
                     </div>
 
-                    {/* فرم افزودن کارت جدید */}
                     {isAdding && (
                         <div className="bg-white rounded-2xl shadow-md overflow-hidden">
                             <div className="p-6 border-b border-gray-200 bg-gray-50">
@@ -440,7 +426,6 @@ const WalletPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* فرم ویرایش کارت */}
                     {editingCard && (
                         <div className="bg-white rounded-2xl shadow-md overflow-hidden">
                             <div className="p-6 border-b border-gray-200 bg-gray-50">

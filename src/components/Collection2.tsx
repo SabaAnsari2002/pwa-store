@@ -30,7 +30,6 @@ const DiscountedProducts: React.FC = () => {
                         href={product.link}
                         className="flex flex-col bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden"
                     >
-                        {/* تصویر با پوشش کامل قاب */}
                         <div className="w-full h-64 overflow-hidden">
                             <img
                                 src={product.image}
