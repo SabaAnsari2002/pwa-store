@@ -1,16 +1,16 @@
-FROM node:18 as build
+FROM node:lts-alpine as build
 
 WORKDIR /app
 
-COPY Frontend/package*.json ./
-RUN npm install
+COPY FrontEnd/pwa-store/package*.json ./
+RUN npm install --registry="https://mirror-npm.runflare.com"
 
-COPY Frontend/ ./
+COPY FrontEnd/pwa-store/ ./
 RUN npm run build
 
 FROM nginx:stable-alpine
 
-COPY --from=build /app/build /usr/share/nginx/html
+COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 
